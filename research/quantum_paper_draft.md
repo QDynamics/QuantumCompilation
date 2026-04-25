@@ -195,10 +195,14 @@ compiler is blocked not because semantics disappear, but because all interior
 boundaries are locally ambiguous and the class is forbidden to break that
 ambiguity by bounded, translation-invariant local evidence.
 
-### 3.3 A non-inverse Fourier-layer separation theorem
+### 3.3 Primary theorem: Fourier-layer recoverability separation
 
-The cleanest separation target in the current artifact is not inverse
-cancellation. It is the non-inverse Fourier-layer family
+The central formal statement is not about inverse cancellation. It is a
+non-inverse Fourier-layer separation in which the exploitable structure is
+Abelian phase aggregation. This is the paper's primary theorem: it provides a
+clean witness that semantic pre-basis compilation and bounded flat
+post-lowering recovery can have different asymptotic power on the same unitary
+family.
 
 - `C_{m,r} = H_Lambda D_m(theta)^r H_Lambda`,
 
@@ -229,11 +233,19 @@ fixed-width construction where `m` is constant.
 
 Now define `F_{w,b,rho}^{fl}` as a restricted basis-local flat compiler class:
 it receives only `L_B(C_{m,r})`, uses at most `b` bounded candidate-generation
-rounds, and may fuse phase terms only when the fusion is certified by at most
-`rho` radius-`w` witness windows. It cannot first reconstruct a global
-phase-polynomial or commuting-diagonal IR from the entire circuit. The
-certification rule is finite-alphabet, translation-invariant away from an
-`O(1)` anomaly zone, and collision-respecting.
+rounds, and may fuse a repeated phase term or a bounded cluster of phase terms
+only when the fusion is certified by at most `rho` radius-`w` witness windows.
+The certificate must authorize the specific local fusion or bounded cluster
+being rewritten; a repeated local certificate profile cannot by itself
+authorize a bulk global aggregation over all copies. The compiler cannot first
+reconstruct a global phase-polynomial or commuting-diagonal IR from the entire
+circuit. The certification rule is finite-alphabet, translation-invariant away
+from an `O(1)` anomaly zone, and collision-respecting.
+
+The theorem is therefore a restricted-class separation. It is not a lower bound
+against compilers that first reconstruct a global phase-polynomial, ZX, or
+diagonal-Hamiltonian representation; such compilers belong to the semantic side
+of the separation.
 
 Fix constants `w,b,rho` and a fixed bounded-arity target-basis lowering scheme
 `L_B`. Consider `C_{m,r}` with `m > w`. Assume:
@@ -255,7 +267,8 @@ Fix constants `w,b,rho` and a fixed bounded-arity target-basis lowering scheme
    requires a finite-alphabet local certificate built from at most `rho`
    radius-`w` windows, the certification rule is translation-invariant away
    from `O(1)` prefix/suffix anomalies, and collision-respecting certificates
-   cannot select one copy from `Theta(r)` locally indistinguishable copies;
+   cannot select one copy, one distant partner, or a bulk aggregation set from
+   `Theta(r)` locally indistinguishable copies;
 5. **no global diagonal lift**:
    the flat compiler cannot first recover the full commuting diagonal
    phase-polynomial representation.
@@ -323,6 +336,14 @@ constant `c > 0`, independent of `m` and `r`, such that
 - `pg_B(A(L_B(C_{m,r}))) >= c r m - O(m)`.
 
 This proves the lower bound and completes the separation.
+
+The proof has two logically distinct parts. The upper bound is a semantic
+coefficient-aggregation identity. The lower bound is a recoverability
+obstruction: after periodic basis lowering, all interior copies of a phase term
+look identical to the bounded local certificate rule, so the flat compiler
+cannot certify the nonlocal aggregation without leaving the restricted class.
+This is why the theorem is about representation-dependent recoverability rather
+than about unitary equivalence.
 
 This theorem is intentionally conditional. A compiler that reconstructs a
 global phase-polynomial or diagonal IR belongs on the semantic side of the
@@ -723,6 +744,32 @@ We also include repeated-run and fixed-seed stability measurements.
 
 ## 5. Results
 
+### 5.0 Evidence map
+
+The experiments are organized by the role they play in the recoverability-gap
+argument, not by the software package being improved.
+
+1. **Primary theorem witness**:
+   the fixed-width `H · D^r · H` family tests the Fourier-layer recoverability
+   separation directly.
+2. **External flat-pipeline behavior**:
+   `qiskit opt3`, TKET, and PyZX comparisons test whether practical pipelines
+   in the artifact recover the same global diagonal representation.
+3. **Causal ablation**:
+   disabling the Fourier-layer semantic path should remove the constant-output
+   behavior if semantic aggregation is the operative mechanism.
+4. **Natural-source controls**:
+   QFT, AQFT, QPE, amplitude-estimation, and QFT-arithmetic cases test whether
+   the witness extracts structure that appears in algorithmic circuits.
+5. **Secondary recoverability evidence**:
+   mirrored/conjugation families test anti-regression and parity recovery
+   rather than the main external-baseline separation.
+
+The current tables already cover the theorem witness, external-pipeline
+behavior, natural-source controls, and secondary recoverability evidence. The
+Fourier ablation is a causal check and should be read as part of this chain
+once its final results are frozen.
+
 ### 5.1 Controlled fixed-basis structural results
 
 #### Repeated `QFT + QFT^-1` (100k gates)
@@ -1069,15 +1116,27 @@ Qiskit baselines.
 
 This study has several limitations.
 
-1. The evaluation is centered on UCC and Qiskit-flavored workflows.
-2. Some benchmark families are intentionally structured and may not represent
-   all realistic workloads.
-3. The method is bounded and heuristic rather than globally optimal.
-4. Strong external baselines still match or exceed the method on some families,
-   for example `supermarq_hamiltonian_sim_8`; `hw_mqt_qpeexact_20` is now a
-   parity case rather than a win.
-5. The strongest external-baseline story is selective rather than dominant
-   across all workloads.
+1. The theorem is a restricted-class separation, not a lower bound against all
+   possible quantum compilers. A compiler that reconstructs a global
+   phase-polynomial, ZX, or commuting-diagonal IR belongs to the semantic side
+   of the separation.
+2. The fixed-width `H · D^r · H` family is intentionally structured. It is a
+   minimal theorem witness, not a claim that all QFT or QPE instances exhibit
+   the same `Omega(r)` gap.
+3. The external-baseline evidence is pipeline-specific. PyZX and TKET are
+   evaluated through the artifact's QASM/Qiskit conversion and fixed-basis
+   protocol, so their failure to recover the constant form is evidence about
+   this configured pipeline rather than a theorem about those tools in all
+   modes.
+4. The evaluation is centered on UCC and Qiskit-flavored workflows.
+5. The method is bounded and heuristic rather than globally optimal.
+6. Strong external baselines still match or exceed the method on some families,
+   for example `supermarq_hamiltonian_sim_8`; mirrored/conjugation cases are
+   therefore framed as parity recovery rather than primary separation evidence.
+7. The Fourier ablation is a causal check for the implementation path. If
+   another semantic fast path also recovers the constant form, the mechanism
+   should be described more broadly as semantic Fourier-layer lifting rather
+   than as one specific code path.
 
 ## 8. Reproducibility
 
@@ -1102,10 +1161,15 @@ These provide:
 This work supports a representation-aware compilation claim rather than a
 sweeping optimizer-dominance claim. Basis lowering can preserve unitary
 semantics while destroying the bounded local evidence needed to recover global
-Fourier-layer and conjugation structure. A bounded semantic term controller can
-preserve that structure, compare candidates before full materialization, and
-close measurable recoverability gaps in UCC. The evidence now includes a
-non-inverse `H · D^r · H` Fourier-layer structural separation as the primary
-witness, mirrored/conjugation anti-regression evidence as a secondary
-generality check, official real-instance quality recovery, public benchmark
-support, and a stable hardware-aware fixed-instance win.
+Fourier-layer and conjugation structure. The primary result is the Fourier-layer
+recoverability separation: bounded flat recovery retains `Omega(rm)`
+phase-gadget structure on `H_Lambda D_m^r H_Lambda`, whereas semantic
+coefficient aggregation emits `O(m)` structure and `O(1)` structure in the
+fixed-width case. The UCC implementation serves as the artifact showing that
+this distinction is operational: the Fourier witness gives a strict separation
+from tested flat pipelines, while mirrored/conjugation families show the
+secondary anti-regression role of semantic lifting by restoring parity on
+Grover-like workloads. The remaining challenge is to broaden these
+recoverability gains beyond the present workload families and to characterize
+more precisely which practical pipelines belong on the flat-recovery side or
+the semantic-lifting side of the separation.
