@@ -17,6 +17,9 @@ class CircuitCase:
 
 TARGET_SIZES = {
     "mqt_qpeexact_32": ("qpeexact", 32),
+    "mqt_qpeinexact_24": ("qpeinexact", 24),
+    "mqt_ae_8": ("ae", 8),
+    "mqt_draper_qft_adder_32": ("draper_qft_adder", 32),
     "mqt_qaoa_32": ("qaoa", 32),
     "mqt_grover_20": ("grover", 20),
 }

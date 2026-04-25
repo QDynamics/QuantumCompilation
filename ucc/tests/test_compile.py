@@ -20,16 +20,36 @@ from ucc.tests.mock_backends import Mybackend
 from ucc import compile
 from ucc.compile import (
     _CompileDispatchPlan,
+    _ConjugationSpanNode,
     _InstructionSpanNode,
+    _MirroredSelfInverseBlockNode,
     _RepeatedSpanNode,
+    _SemanticCircuitLeafTerm,
+    _SemanticConjugationTerm,
+    _SemanticFourierLayerTerm,
+    _SemanticMirroredSelfInverseTerm,
+    _SemanticRepeatTerm,
+    _SemanticSequenceTerm,
     _build_compile_dispatch_plan,
     _build_hierarchical_nodes,
+    _build_repeated_run_term,
+    _build_semantic_term,
+    _compile_conjugation_reference,
+    _compile_mirrored_self_inverse_reference,
+    _compile_semantic_reference_with_local_opt,
     _compile_repeated_structure_dispatch,
     _compile_repeated_composite_prefix_reference,
     _compile_hierarchical_reference,
     _compile_backend_default_portfolio,
+    _select_backend_repeated_run_candidates,
     _build_semantic_ir,
+    _find_conjugation_span,
+    _find_mirrored_self_inverse_block,
     _lower_semantic_ir_to_target_basis,
+    _lower_semantic_term_to_circuit,
+    _project_repeated_run_metrics,
+    _semantic_compiled_term_metrics,
+    _semantic_ir_to_term,
     _semantic_local_simplify,
     _merge_adjacent_parameterized_gates,
     _should_use_backend_repeated_run_shortcut,
@@ -117,6 +137,27 @@ def qpe_roundtrip_block(eval_qubits):
         for _ in range(2**qubit):
             qc.cp(-math.pi / 8, qubit, phase_qubit)
 
+    return qc
+
+
+def conjugation_block():
+    qc = QiskitCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.rz(0.25, 1)
+    qc.cx(0, 1)
+    qc.h(0)
+    return qc
+
+
+def mirrored_self_inverse_block():
+    qc = QiskitCircuit(2)
+    qc.cz(0, 1)
+    qc.h(0)
+    qc.x(1)
+    qc.cx(0, 1)
+    qc.x(1)
+    qc.h(0)
     return qc
 
 
@@ -982,15 +1023,188 @@ def test_semantic_local_simplify_canonicalizes_commuting_diagonal_phase_span():
     assert simplified_circuit.data[0].operation.params[0] == pytest.approx(0.4)
 
 
+def test_compile_presimplifies_fourier_phase_sandwich_before_direct_shortcut():
+    circuit = QiskitCircuit(4)
+    for qubit in range(4):
+        circuit.h(qubit)
+    for _ in range(8):
+        for qubit in range(4):
+            circuit.rz(math.pi / (7 + qubit), qubit)
+        for control in range(4):
+            for target in range(control + 1, 4):
+                circuit.cp(math.pi / (11 + control + target), control, target)
+    for qubit in range(4):
+        circuit.h(qubit)
+
+    target_gateset = {"cx", "rx", "ry", "rz", "h"}
+    assert not _should_direct_short_circuit_qiskit_source_preset(
+        circuit, target_gateset, None, False
+    )
+
+    presimplified = _structural_pre_simplify(circuit)
+    assert len(presimplified.data) == 18
+
+    compiled = compile(
+        circuit, return_format="qiskit", target_gateset=target_gateset
+    )
+
+    assert sum(compiled.count_ops().values()) <= 50
+    assert Statevector(circuit).equiv(Statevector(compiled))
+
+
 def test_semantic_ir_lowering_preserves_qpe_roundtrip_unitary():
     circuit = qpe_roundtrip_block(3)
 
     semantic_ir = _build_semantic_ir(_semantic_local_simplify(circuit))
 
     assert semantic_ir is not None
+    assert len(semantic_ir) == 1
+    assert type(semantic_ir[0]).__name__ == "_SemanticPhaseLadderNode"
     lowered_circuit = _lower_semantic_ir_to_target_basis(circuit, semantic_ir)
     assert lowered_circuit is not None
     assert Statevector(circuit).equiv(Statevector(lowered_circuit))
+
+
+def test_semantic_term_lowering_preserves_qpe_roundtrip_unitary():
+    circuit = qpe_roundtrip_block(3)
+
+    semantic_ir = _build_semantic_ir(_semantic_local_simplify(circuit))
+
+    assert semantic_ir is not None
+    semantic_term = _semantic_ir_to_term(semantic_ir)
+    lowered_circuit = _lower_semantic_term_to_circuit(circuit, semantic_term)
+
+    assert lowered_circuit is not None
+    assert Statevector(circuit).equiv(Statevector(lowered_circuit))
+
+
+def test_build_semantic_term_promotes_qpe_roundtrip_to_fourier_term():
+    template_circuit, semantic_term = _build_semantic_term(
+        _semantic_local_simplify(qpe_roundtrip_block(3))
+    )
+
+    assert template_circuit is not None
+    assert isinstance(semantic_term, _SemanticFourierLayerTerm)
+    assert len(semantic_term.stages) >= 2
+
+
+def test_backend_semantic_reference_path_is_available_for_qpe_roundtrip():
+    circuit = _semantic_local_simplify(qpe_roundtrip_block(3))
+    compiler = UCCDefault1(target_backend=Mybackend())
+
+    semantic_reference = _compile_semantic_reference_with_local_opt(
+        circuit, compiler
+    )
+
+    assert semantic_reference is not None
+
+
+def test_semantic_compiled_term_metrics_match_repeated_run_projection():
+    prefix_circuit = QiskitCircuit(2)
+    prefix_circuit.h(0)
+    block_circuit = QiskitCircuit(2)
+    block_circuit.cx(0, 1)
+    block_circuit.rz(0.25, 1)
+    suffix_circuit = QiskitCircuit(2)
+    suffix_circuit.rx(0.5, 0)
+
+    repeated_term = _build_repeated_run_term(
+        prefix_circuit, block_circuit, suffix_circuit, 3
+    )
+    projected_metrics = _project_repeated_run_metrics(
+        prefix_circuit, block_circuit, suffix_circuit, 3
+    )
+
+    assert projected_metrics == _semantic_compiled_term_metrics(repeated_term)
+
+
+def test_semantic_conjugation_term_lowering_preserves_unitary():
+    prefix_circuit = QiskitCircuit(2)
+    prefix_circuit.h(0)
+    prefix_circuit.cx(0, 1)
+    center_circuit = QiskitCircuit(2)
+    center_circuit.rz(0.25, 1)
+
+    conjugation_term = _SemanticConjugationTerm(
+        _SemanticCircuitLeafTerm(prefix_circuit),
+        _SemanticCircuitLeafTerm(center_circuit),
+    )
+    lowered_circuit = _lower_semantic_term_to_circuit(
+        conjugation_block(), conjugation_term
+    )
+
+    assert lowered_circuit is not None
+    assert Statevector(conjugation_block()).equiv(Statevector(lowered_circuit))
+
+
+def test_build_semantic_term_detects_mirrored_self_inverse_structure():
+    template_circuit, semantic_term = _build_semantic_term(
+        mirrored_self_inverse_block()
+    )
+
+    assert template_circuit is not None
+    assert isinstance(semantic_term, _SemanticMirroredSelfInverseTerm)
+
+
+def test_semantic_mirrored_self_inverse_term_lowering_preserves_unitary():
+    template_circuit, semantic_term = _build_semantic_term(
+        mirrored_self_inverse_block()
+    )
+
+    assert isinstance(semantic_term, _SemanticMirroredSelfInverseTerm)
+    lowered_circuit = _lower_semantic_term_to_circuit(
+        template_circuit, semantic_term
+    )
+
+    assert lowered_circuit is not None
+    assert Statevector(mirrored_self_inverse_block()).equiv(
+        Statevector(lowered_circuit)
+    )
+
+
+def test_find_conjugation_span_detects_prefix_center_inverse_prefix():
+    circuit = conjugation_block()
+
+    conjugation_span = _find_conjugation_span(circuit)
+
+    assert conjugation_span == _ConjugationSpanNode(
+        prefix_size=2,
+        center_start=2,
+        center_end=3,
+    )
+
+
+def test_compile_conjugation_reference_preserves_unitary():
+    circuit = conjugation_block()
+    compiler = UCCDefault1(target_gateset={"cx", "rx", "ry", "rz", "h"})
+
+    reference_circuit = _compile_conjugation_reference(circuit, compiler)
+
+    assert reference_circuit is not None
+    assert Statevector(circuit).equiv(Statevector(reference_circuit))
+
+
+def test_find_mirrored_self_inverse_block_detects_diagonal_prefix_shell():
+    circuit = mirrored_self_inverse_block()
+
+    mirrored_block = _find_mirrored_self_inverse_block(circuit)
+
+    assert mirrored_block == _MirroredSelfInverseBlockNode(
+        diagonal_prefix_size=1,
+        shell_prefix_size=2,
+    )
+
+
+def test_compile_mirrored_self_inverse_reference_preserves_unitary():
+    circuit = mirrored_self_inverse_block()
+    compiler = UCCDefault1(target_gateset={"cx", "rx", "ry", "rz", "h"})
+
+    reference_circuit = _compile_mirrored_self_inverse_reference(
+        circuit, compiler
+    )
+
+    assert reference_circuit is not None
+    assert Statevector(circuit).equiv(Statevector(reference_circuit))
 
 
 def test_presimplified_preset_heuristic_targets_low_entanglement_mirrored_case():
@@ -1413,7 +1627,9 @@ def test_repeated_structure_dispatch_semantic_repeated_prefix_skips_expensive_ca
     monkeypatch.setattr(
         compile_module,
         "_compile_repeated_composite_prefix_reference",
-        lambda *args, **kwargs: composite_reference,
+        lambda *args, **kwargs: pytest.fail(
+            "semantic repeated-prefix fast path should skip repeated composite reference"
+        ),
     )
     monkeypatch.setattr(
         compile_module,
@@ -1449,6 +1665,95 @@ def test_repeated_structure_dispatch_semantic_repeated_prefix_skips_expensive_ca
 
     assert result.count_ops() == repeated_prefix_reference.count_ops()
 
+
+def test_repeated_structure_dispatch_prefers_presimplified_repeated_candidates(
+    monkeypatch,
+):
+    compile_module = importlib.import_module("ucc.compile")
+
+    source_circuit = repeated_block(grover_mirrored_block(6), repeats=8)
+    presimplified_circuit = source_circuit.copy()
+    compiler = UCCDefault1(target_gateset={"cx", "rx", "ry", "rz", "h"})
+    baseline_circuit = qiskit_transpile(
+        source_circuit,
+        basis_gates=["cx", "rx", "ry", "rz", "h"],
+        optimization_level=0,
+    )
+
+    source_reference = baseline_circuit.copy_empty_like()
+    for _ in range(12):
+        source_reference.h(0)
+
+    presimplified_reference = baseline_circuit.copy_empty_like()
+    for _ in range(6):
+        presimplified_reference.h(0)
+
+    presimplified_full = baseline_circuit.copy_empty_like()
+    for _ in range(4):
+        presimplified_full.h(0)
+
+    monkeypatch.setattr(
+        compile_module,
+        "_should_compare_against_presimplified_repeated_dispatch",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_supports_semantic_repeated_prefix_fast_path",
+        lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_dominant_repeated_prefix",
+        lambda circuit: (2, 4) if circuit is presimplified_circuit else None,
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_compile_repeated_composite_prefix_reference",
+        lambda circuit, *args, **kwargs: (
+            source_reference
+            if circuit is source_circuit
+            else presimplified_reference
+        ),
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_compile_repeated_prefix_reference",
+        lambda circuit, *args, **kwargs: (
+            source_reference
+            if circuit is source_circuit
+            else presimplified_reference
+        ),
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_compile_presimplified_full_preset_reference",
+        lambda *args, **kwargs: presimplified_full,
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_compile_hierarchical_reference",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        compile_module,
+        "_compile_preset_reference",
+        lambda *args, **kwargs: None,
+    )
+
+    result = _compile_repeated_structure_dispatch(
+        _CompileDispatchPlan(
+            mode="repeated_structure_dispatch",
+            compiler=compiler,
+            source_circuit=source_circuit,
+            presimplified_circuit=presimplified_circuit,
+            basis_translated_circuit=baseline_circuit,
+            baseline_circuit=baseline_circuit,
+            repeated_prefix=(len(grover_mirrored_block(6).data), 8),
+        )
+    )
+
+    assert result.count_ops() == presimplified_full.count_ops()
 
 def test_build_compile_dispatch_plan_skips_global_repeat_scan_for_dominant_prefix(
     monkeypatch,
@@ -1894,6 +2199,36 @@ def test_should_use_backend_repeated_run_shortcut_detects_large_composite_run():
         circuit.append(repeated_gate, [0, 1])
 
     assert _should_use_backend_repeated_run_shortcut(circuit)
+
+
+def test_select_backend_repeated_run_candidates_prefers_depth_and_multi_tradeoff(monkeypatch):
+    reference_circuit = object()
+    tradeoff_circuit = object()
+
+    metrics_by_circuit = {
+        id(reference_circuit): {
+            "total_gates": 100,
+            "depth": 100,
+            "multi_qubit_gates": 100,
+        },
+        id(tradeoff_circuit): {
+            "total_gates": 108,
+            "depth": 85,
+            "multi_qubit_gates": 75,
+        },
+    }
+
+    monkeypatch.setattr(
+        importlib.import_module("ucc.compile"),
+        "_circuit_metrics",
+        lambda circuit: metrics_by_circuit[id(circuit)],
+    )
+
+    selected_circuit = _select_backend_repeated_run_candidates(
+        [reference_circuit, tradeoff_circuit]
+    )
+
+    assert selected_circuit is tradeoff_circuit
 
 
 def test_compile_uses_backend_repeated_run_shortcut(monkeypatch):

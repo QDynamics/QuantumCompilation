@@ -28,7 +28,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.206
+      "runtime_s": 0.336
     },
     "qiskit_opt0": {
       "method": "qiskit_opt0",
@@ -58,7 +58,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.204
+      "runtime_s": 0.265
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -88,7 +88,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.538
+      "runtime_s": 0.711
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -120,7 +120,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 1.794
+      "runtime_s": 2.341
     },
     "tket_full_peephole": {
       "method": "tket_full_peephole",
@@ -168,7 +168,7 @@
           "rz"
         ]
       },
-      "runtime_s": 4.885
+      "runtime_s": 6.405
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -194,7 +194,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 14.51
+      "runtime_s": 2.596
     }
   },
   "qft_control": {
@@ -226,7 +226,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.208
+      "runtime_s": 0.249
     },
     "qiskit_opt0": {
       "method": "qiskit_opt0",
@@ -256,7 +256,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.203
+      "runtime_s": 0.253
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -286,7 +286,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.413
+      "runtime_s": 0.559
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -316,7 +316,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.603
+      "runtime_s": 1.956
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -346,7 +346,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.724
+      "runtime_s": 2.296
     },
     "tket_full_peephole": {
       "method": "tket_full_peephole",
@@ -394,7 +394,7 @@
           "rz"
         ]
       },
-      "runtime_s": 5.521
+      "runtime_s": 7.315
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -424,7 +424,7 @@
           "rz"
         ]
       },
-      "runtime_s": 4.954
+      "runtime_s": 4.637
     }
   },
   "qpe_style": {
@@ -456,7 +456,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.208
+      "runtime_s": 0.256
     },
     "qiskit_opt0": {
       "method": "qiskit_opt0",
@@ -486,7 +486,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.208
+      "runtime_s": 0.257
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -516,7 +516,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.404
+      "runtime_s": 0.539
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -552,7 +552,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.545
+      "runtime_s": 1.948
     },
     "tket_full_peephole": {
       "method": "tket_full_peephole",
@@ -600,7 +600,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.567
+      "runtime_s": 3.271
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -620,7 +620,7 @@
       "status": "ok",
       "output": {
         "num_qubits": 5,
-        "total_gates": 167800,
+        "total_gates": 164400,
         "depth": 110001,
         "multi_qubit_gates": 60200,
         "cx_count": 60200,
@@ -632,7 +632,7 @@
           "rz"
         ]
       },
-      "runtime_s": 19.675
+      "runtime_s": 5.285
     }
   },
   "qaoa_ring": {
@@ -664,7 +664,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.025
+      "runtime_s": 0.027
     },
     "qiskit_opt0": {
       "method": "qiskit_opt0",
@@ -694,7 +694,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.025
+      "runtime_s": 0.034
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -724,7 +724,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.063
+      "runtime_s": 0.08
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -754,7 +754,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.301
+      "runtime_s": 0.397
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -784,7 +784,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.435
+      "runtime_s": 0.531
     },
     "tket_full_peephole": {
       "method": "tket_full_peephole",
@@ -832,7 +832,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.281
+      "runtime_s": 1.612
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -862,7 +862,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.543
+      "runtime_s": 0.116
     }
   },
   "grover_mirrored": {
@@ -895,7 +895,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.928
+      "runtime_s": 2.538
     },
     "qiskit_opt0": {
       "method": "qiskit_opt0",
@@ -926,7 +926,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.905
+      "runtime_s": 2.616
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -958,7 +958,7 @@
           "rz"
         ]
       },
-      "runtime_s": 3.213
+      "runtime_s": 4.517
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -990,7 +990,7 @@
           "rz"
         ]
       },
-      "runtime_s": 7.733
+      "runtime_s": 10.67
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -1021,7 +1021,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.308
+      "runtime_s": 3.108
     },
     "tket_full_peephole": {
       "method": "tket_full_peephole",
@@ -1069,7 +1069,7 @@
           "rz"
         ]
       },
-      "runtime_s": 22.798
+      "runtime_s": 29.692
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -1101,7 +1101,7 @@
           "rz"
         ]
       },
-      "runtime_s": 9.395
+      "runtime_s": 13.191
     }
   }
 }

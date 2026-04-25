@@ -35,21 +35,20 @@
 - 公共 benchmark source：
   - `MQT Bench`
   - `SupermarQ`
-- hardware-aware 胜场：
-  - `hw_mqt_qaoa_20`
 - 稳定性：
   - `hw_mqt_qaoa_20` 在 5 个 fixed seed 上稳定胜出
-- hardware-aware 胜场：
-  - `hw_mqt_qpeexact_20`
-  - `hw_mqt_qaoa_20`
+- hardware-aware 证据：
+  - `hw_mqt_qaoa_20` 是稳定胜场
+  - `hw_mqt_qpeexact_20` 在当前 canonical fixed seed 上与 `qiskit opt3` 追平
 
 ## 需要主动承认的弱点
 
 - 有些 family 目前仍然只是追平 `qiskit opt3`
 - `supermarq_hamiltonian_sim_8` 是 mixed case
 - 当前方法是 bounded heuristic，不是全局最优方法
-- `hw_mqt_grover_20` 目前更适合作为 timeout-recovery / robustness case，
-  而不是主质量结果
+- `hw_mqt_grover_20` 目前仍更适合作为 timeout-recovery / robustness case，
+  而不是主质量结果；不过 stronger mirrored/self-inverse repeated-run IR
+  已经进一步降低了它的 total gates / depth / `cx`
 
 ## 最推荐的论文主张
 

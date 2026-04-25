@@ -45,13 +45,14 @@ avoids the large basis-lowering regression seen in baseline UCC.
 ### `supermarq_hamiltonian_sim_8`
 
 - baseline `UCC`: `71` gates, depth `36`
-- optimized `UCC`: `71` gates, depth `36`
+- optimized `UCC`: `51` gates, depth `24`
 - `qiskit opt3`: `51` gates, depth `24`
 - `qiskit opt1`: `29` gates, depth `22`
 
 This is the mixed case in the new public source:
-- the optimized branch does not improve on baseline UCC here
-- and it is weaker than the strongest Qiskit baselines
+- the optimized branch fixes the baseline-UCC regression and reaches `qiskit opt3`
+  quality
+- but it is still weaker than the strongest Qiskit baseline (`qiskit opt1`)
 
 ## Overall Conclusion
 
@@ -62,7 +63,8 @@ Adding `SupermarQ` strengthens the public-benchmark story in a useful way:
 - the optimized branch continues to show clear value on multiple public
   benchmark families
 - but the new source also exposes a realistic limitation:
-  the current method is not uniformly superior on every family
+  the current method is not uniformly superior to the strongest Qiskit
+  baseline on every family
 
 So the most accurate updated claim is:
 

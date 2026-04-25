@@ -58,7 +58,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.006
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -89,7 +89,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.007
+      "runtime_s": 0.009
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -119,7 +119,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.004
+      "runtime_s": 0.005
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
@@ -149,7 +149,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.007
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -169,17 +169,18 @@
       "status": "ok",
       "output": {
         "num_qubits": 8,
-        "total_gates": 71,
-        "depth": 36,
+        "total_gates": 51,
+        "depth": 24,
         "multi_qubit_gates": 7,
         "cx_count": 7,
         "gate_types": [
           "cx",
+          "rx",
           "ry",
           "rz"
         ]
       },
-      "runtime_s": 0.008
+      "runtime_s": 0.01
     }
   },
   "supermarq_mermin_bell_8": {
@@ -215,7 +216,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.006
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -249,7 +250,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.007
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -284,7 +285,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.007
+      "runtime_s": 0.009
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -318,7 +319,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.006
+      "runtime_s": 0.008
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
@@ -351,7 +352,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.008
+      "runtime_s": 0.016
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -386,7 +387,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.006
+      "runtime_s": 0.009
     }
   },
   "supermarq_qaoa_vanilla_12": {
@@ -420,7 +421,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.004
+      "runtime_s": 0.005
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -452,7 +453,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.006
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -484,7 +485,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.007
+      "runtime_s": 0.008
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -516,7 +517,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.006
+      "runtime_s": 0.007
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
@@ -547,7 +548,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.009
+      "runtime_s": 0.011
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -579,7 +580,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.038
+      "runtime_s": 0.01
     }
   }
 }

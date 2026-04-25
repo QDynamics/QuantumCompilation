@@ -27,6 +27,9 @@ METHODS = (
 )
 FAMILIES = (
     "mqt_qpeexact_32",
+    "mqt_qpeinexact_24",
+    "mqt_ae_8",
+    "mqt_draper_qft_adder_32",
     "mqt_qaoa_32",
     "mqt_grover_20",
 )
@@ -176,15 +179,17 @@ def run_parent(
     python_executable: str,
     baseline_repo: Path,
     experimental_repo: Path,
+    methods: tuple[str, ...],
+    families: tuple[str, ...],
 ) -> dict:
     repo_for_method = {
         "baseline_ucc": baseline_repo,
         "optimized_ucc": experimental_repo,
     }
     payload: dict[str, dict[str, dict]] = {}
-    for family in FAMILIES:
+    for family in families:
         payload[family] = {}
-        for method in METHODS:
+        for method in methods:
             repo_root = repo_for_method.get(method)
             payload[family][method] = launch_worker(
                 python_executable,
@@ -196,7 +201,7 @@ def run_parent(
     return payload
 
 
-def markdown_summary(payload: dict) -> str:
+def markdown_summary(payload: dict, methods: tuple[str, ...]) -> str:
     lines = [
         "# Public Benchmark Suite Baselines (MQT Bench)",
         "",
@@ -212,7 +217,7 @@ def markdown_summary(payload: dict) -> str:
                 "|---|---|---:|---:|---:|---:|",
             ]
         )
-        for method in METHODS:
+        for method in methods:
             result = results[method]
             status = result["status"]
             if status == "ok":
@@ -254,6 +259,18 @@ def main() -> None:
     )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--md-out", type=Path)
+    parser.add_argument(
+        "--families",
+        nargs="+",
+        choices=FAMILIES,
+        default=list(FAMILIES),
+    )
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=METHODS,
+        default=list(METHODS),
+    )
     args = parser.parse_args()
 
     if args.worker:
@@ -269,16 +286,21 @@ def main() -> None:
         )
         return
 
+    selected_methods = tuple(args.methods)
+    selected_families = tuple(args.families)
+
     payload = run_parent(
         args.python_executable,
         args.baseline_repo,
         args.experimental_repo,
+        selected_methods,
+        selected_families,
     )
 
     if args.json_out is not None:
         args.json_out.write_text(json.dumps(payload, indent=2))
     if args.md_out is not None:
-        args.md_out.write_text(markdown_summary(payload))
+        args.md_out.write_text(markdown_summary(payload, selected_methods))
 
     print(json.dumps(payload, indent=2))
 

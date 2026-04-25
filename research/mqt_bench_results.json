@@ -34,7 +34,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.007
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -70,7 +70,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.008
+      "runtime_s": 0.018
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -107,7 +107,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.018
+      "runtime_s": 0.023
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -143,7 +143,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.075
+      "runtime_s": 0.103
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
@@ -178,7 +178,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.058
+      "runtime_s": 0.074
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -215,7 +215,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.046
+      "runtime_s": 0.023
     }
   },
   "mqt_qaoa_32": {
@@ -248,7 +248,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.004
+      "runtime_s": 0.005
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -279,7 +279,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.005
+      "runtime_s": 0.007
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -310,7 +310,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.012
+      "runtime_s": 0.014
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -341,7 +341,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.026
+      "runtime_s": 0.031
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
@@ -371,7 +371,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.057
+      "runtime_s": 0.074
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -402,7 +402,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.036
+      "runtime_s": 0.016
     }
   },
   "mqt_grover_20": {
@@ -439,7 +439,7 @@
           "rz"
         ]
       },
-      "runtime_s": 4.695
+      "runtime_s": 6.264
     },
     "qiskit_opt1": {
       "method": "qiskit_opt1",
@@ -475,7 +475,7 @@
           "rz"
         ]
       },
-      "runtime_s": 9.619
+      "runtime_s": 14.343
     },
     "qiskit_opt3": {
       "method": "qiskit_opt3",
@@ -511,7 +511,7 @@
           "rz"
         ]
       },
-      "runtime_s": 27.292
+      "runtime_s": 38.043
     },
     "qiskit_commutative_inverse": {
       "method": "qiskit_commutative_inverse",
@@ -546,41 +546,13 @@
           "rz"
         ]
       },
-      "runtime_s": 4.662
+      "runtime_s": 6.674
     },
     "baseline_ucc": {
       "method": "baseline_ucc",
       "family": "mqt_grover_20",
-      "input": {
-        "num_qubits": 20,
-        "total_gates": 609,
-        "depth": 570,
-        "multi_qubit_gates": 569,
-        "cx_count": 0,
-        "gate_types": [
-          "Q",
-          "barrier",
-          "h",
-          "measure",
-          "x"
-        ]
-      },
-      "status": "ok",
-      "output": {
-        "num_qubits": 20,
-        "total_gates": 14046115,
-        "depth": 8500182,
-        "multi_qubit_gates": 1544961,
-        "cx_count": 1544960,
-        "gate_types": [
-          "barrier",
-          "cx",
-          "measure",
-          "ry",
-          "rz"
-        ]
-      },
-      "runtime_s": 77.823
+      "status": "timeout",
+      "timeout_s": 120
     },
     "optimized_ucc": {
       "method": "optimized_ucc",
@@ -616,7 +588,7 @@
           "rz"
         ]
       },
-      "runtime_s": 27.515
+      "runtime_s": 39.123
     }
   }
 }

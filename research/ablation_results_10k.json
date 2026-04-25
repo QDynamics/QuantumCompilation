@@ -23,7 +23,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 4.984
+      "runtime_s": 5.892
     },
     "candidate_selection_only": {
       "family": "qft_inverse",
@@ -48,7 +48,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 5.04
+      "runtime_s": 5.866
     },
     "commutative_only": {
       "family": "qft_inverse",
@@ -73,7 +73,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 4.961
+      "runtime_s": 6.098
     },
     "no_prefix": {
       "family": "qft_inverse",
@@ -98,7 +98,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 5.037
+      "runtime_s": 6.043
     },
     "no_run": {
       "family": "qft_inverse",
@@ -123,7 +123,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 4.954
+      "runtime_s": 6.04
     },
     "no_adjacent_inverse": {
       "family": "qft_inverse",
@@ -148,7 +148,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 4.99
+      "runtime_s": 8.712
     },
     "no_candidate_selection": {
       "family": "qft_inverse",
@@ -173,7 +173,7 @@
         "cx_count": 0,
         "gate_types": []
       },
-      "runtime_s": 5.031
+      "runtime_s": 6.254
     }
   },
   "qft_control": {
@@ -204,7 +204,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.146
+      "runtime_s": 0.181
     },
     "candidate_selection_only": {
       "family": "qft_control",
@@ -233,7 +233,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.15
+      "runtime_s": 0.184
     },
     "commutative_only": {
       "family": "qft_control",
@@ -262,7 +262,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.147
+      "runtime_s": 0.19
     },
     "no_prefix": {
       "family": "qft_control",
@@ -291,7 +291,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.148
+      "runtime_s": 0.173
     },
     "no_run": {
       "family": "qft_control",
@@ -320,7 +320,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.147
+      "runtime_s": 0.184
     },
     "no_adjacent_inverse": {
       "family": "qft_control",
@@ -349,7 +349,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.148
+      "runtime_s": 0.181
     },
     "no_candidate_selection": {
       "family": "qft_control",
@@ -378,7 +378,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.148
+      "runtime_s": 0.197
     }
   },
   "qpe_style": {
@@ -411,7 +411,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.132
+      "runtime_s": 2.632
     },
     "candidate_selection_only": {
       "family": "qpe_style",
@@ -442,7 +442,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.098
+      "runtime_s": 2.529
     },
     "commutative_only": {
       "family": "qpe_style",
@@ -473,7 +473,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.184
+      "runtime_s": 2.527
     },
     "no_prefix": {
       "family": "qpe_style",
@@ -504,7 +504,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.079
+      "runtime_s": 2.616
     },
     "no_run": {
       "family": "qpe_style",
@@ -535,7 +535,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.166
+      "runtime_s": 2.403
     },
     "no_adjacent_inverse": {
       "family": "qpe_style",
@@ -566,7 +566,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.151
+      "runtime_s": 2.473
     },
     "no_candidate_selection": {
       "family": "qpe_style",
@@ -597,7 +597,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.204
+      "runtime_s": 2.47
     }
   },
   "qaoa_ring": {
@@ -628,7 +628,7 @@
           "rz"
         ]
       },
-      "runtime_s": 8.886
+      "runtime_s": 0.016
     },
     "candidate_selection_only": {
       "family": "qaoa_ring",
@@ -657,7 +657,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.419
+      "runtime_s": 0.023
     },
     "commutative_only": {
       "family": "qaoa_ring",
@@ -686,7 +686,7 @@
           "rz"
         ]
       },
-      "runtime_s": 1.514
+      "runtime_s": 0.016
     },
     "no_prefix": {
       "family": "qaoa_ring",
@@ -715,7 +715,7 @@
           "rz"
         ]
       },
-      "runtime_s": 8.915
+      "runtime_s": 0.016
     },
     "no_run": {
       "family": "qaoa_ring",
@@ -744,7 +744,7 @@
           "rz"
         ]
       },
-      "runtime_s": 8.031
+      "runtime_s": 0.016
     },
     "no_adjacent_inverse": {
       "family": "qaoa_ring",
@@ -773,7 +773,7 @@
           "rz"
         ]
       },
-      "runtime_s": 2.523
+      "runtime_s": 0.024
     },
     "no_candidate_selection": {
       "family": "qaoa_ring",
@@ -792,17 +792,17 @@
       },
       "output": {
         "num_qubits": 20,
-        "total_gates": 30055,
-        "depth": 16355,
+        "total_gates": 10000,
+        "depth": 6200,
         "multi_qubit_gates": 4000,
         "cx_count": 4000,
         "gate_types": [
           "cx",
-          "ry",
+          "rx",
           "rz"
         ]
       },
-      "runtime_s": 7.703
+      "runtime_s": 0.016
     }
   },
   "grover_mirrored": {
@@ -835,7 +835,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.772
+      "runtime_s": 0.872
     },
     "candidate_selection_only": {
       "family": "grover_mirrored",
@@ -866,7 +866,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.747
+      "runtime_s": 0.897
     },
     "commutative_only": {
       "family": "grover_mirrored",
@@ -897,7 +897,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.731
+      "runtime_s": 0.915
     },
     "no_prefix": {
       "family": "grover_mirrored",
@@ -928,7 +928,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.729
+      "runtime_s": 0.915
     },
     "no_run": {
       "family": "grover_mirrored",
@@ -959,7 +959,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.73
+      "runtime_s": 0.928
     },
     "no_adjacent_inverse": {
       "family": "grover_mirrored",
@@ -990,7 +990,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.804
+      "runtime_s": 0.913
     },
     "no_candidate_selection": {
       "family": "grover_mirrored",
@@ -1021,7 +1021,7 @@
           "rz"
         ]
       },
-      "runtime_s": 0.752
+      "runtime_s": 0.9
     }
   }
 }

@@ -26,4 +26,4 @@ Seed transpiler: `12345`
 |---|---|---:|---:|---:|---:|
 | qiskit_opt3 | timeout | - | - | - | > 240 s |
 | baseline_ucc | timeout | - | - | - | > 240 s |
-| optimized_ucc | ok | 6,217,937 | 4,854,184 | 4,494,584 | 27.93 s |
+| optimized_ucc | ok | 6,467,857 | 4,094,196 | 3,045,048 | 2.146 s |

@@ -231,10 +231,10 @@
       "status": "ok",
       "output": {
         "num_qubits": 20,
-        "total_gates": 6217937,
-        "depth": 4854184,
-        "multi_qubit_gates": 4494585,
-        "cx_count": 4494584,
+        "total_gates": 6467857,
+        "depth": 4094196,
+        "multi_qubit_gates": 3045049,
+        "cx_count": 3045048,
         "gate_types": [
           "barrier",
           "cx",
@@ -243,7 +243,7 @@
           "u"
         ]
       },
-      "runtime_s": 27.93
+      "runtime_s": 2.146
     }
   }
 }

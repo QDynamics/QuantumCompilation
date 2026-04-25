@@ -32,8 +32,8 @@ of the paper:
 |---|---:|---:|---:|---:|
 | translation_only | 2,620 | 367 | 1,037 | 0.007 s |
 | qiskit_opt3 | 1,891 | 307 | 904 | 0.023 s |
-| baseline UCC | 5,494 | 818 | 764 | 0.089 s |
-| optimized UCC | 1,891 | 307 | 904 | 0.425 s |
+| baseline UCC | 5,494 | 818 | 764 | 0.074 s |
+| optimized UCC | 1,891 | 307 | 904 | 0.023 s |
 
 Observation:
 
@@ -46,8 +46,8 @@ Observation:
 |---|---:|---:|---:|---:|
 | translation_only | 1,422 | 213 | 884 | 0.004 s |
 | qiskit_opt3 | 1,422 | 213 | 884 | 0.014 s |
-| baseline UCC | 6,310 | 597 | 884 | 0.071 s |
-| optimized UCC | 1,422 | 213 | 884 | 0.327 s |
+| baseline UCC | 6,310 | 597 | 884 | 0.074 s |
+| optimized UCC | 1,422 | 213 | 884 | 0.016 s |
 
 Observation:
 
@@ -58,16 +58,16 @@ Observation:
 
 | Method | Output Gates | Output Depth | CX Count | Runtime |
 |---|---:|---:|---:|---:|
-| translation_only | 4,099,297 | 3,300,108 | 1,546,096 | 6.106 s |
-| qiskit_opt3 | 3,848,810 | 3,269,433 | 1,546,096 | 36.028 s |
+| translation_only | 4,099,297 | 3,300,108 | 1,546,096 | 6.264 s |
+| qiskit_opt3 | 3,848,810 | 3,269,433 | 1,546,096 | 38.043 s |
 | baseline UCC | timeout | - | - | > 120 s |
-| optimized UCC | 3,848,810 | 3,269,433 | 1,546,096 | 58.424 s |
+| optimized UCC | 3,848,810 | 3,269,433 | 1,546,096 | 39.123 s |
 
 Observation:
 
 - optimized UCC reaches the same output quality as `qiskit opt3`
 - baseline UCC does not finish within the configured timeout on this instance
-- runtime is still noticeably worse than direct `qiskit opt3` on this case
+- runtime is now very close to direct `qiskit opt3` on this case
 
 ## Interpretation
 

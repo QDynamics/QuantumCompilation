@@ -41,9 +41,9 @@ It is a bounded redesign of the UCC decision flow:
 - public benchmark sources:
   - `MQT Bench`
   - `SupermarQ`
-- hardware-aware wins:
-  - `hw_mqt_qaoa_20`
-  - `hw_mqt_qpeexact_20`
+- hardware-aware evidence:
+  - stable win on `hw_mqt_qaoa_20`
+  - fixed-seed parity on `hw_mqt_qpeexact_20`
 - stability:
   - five-seed win on `hw_mqt_qaoa_20`
 
@@ -52,8 +52,10 @@ It is a bounded redesign of the UCC decision flow:
 - some families still only reach parity with `qiskit opt3`
 - `supermarq_hamiltonian_sim_8` is a mixed case
 - the method is bounded and heuristic, not globally optimal
-- `hw_mqt_grover_20` is now a timeout-recovery / robustness case rather than a
-  competitive routed-quality result
+- `hw_mqt_grover_20` is still best framed as a timeout-recovery / robustness
+  case rather than a main competitive routed-quality result, even though the
+  stronger mirrored/self-inverse repeated-run IR now lowers its total gates,
+  depth, and `cx` versus the earlier fallback
 
 ## Recommended paper-level claim
 
