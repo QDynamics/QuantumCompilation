@@ -231,16 +231,20 @@ per diagonal term, replace `(P_j, theta_j)` by `(P_j, r theta_j)`, and lower
 each bounded-arity term once. Its output size is `O(m)`, or `O(1)` in the
 fixed-width construction where `m` is constant.
 
-Now define `F_{w,b,rho}^{fl}` as a restricted basis-local flat compiler class:
-it receives only `L_B(C_{m,r})`, uses at most `b` bounded candidate-generation
-rounds, and may fuse a repeated phase term or a bounded cluster of phase terms
-only when the fusion is certified by at most `rho` radius-`w` witness windows.
-The certificate must authorize the specific local fusion or bounded cluster
-being rewritten; a repeated local certificate profile cannot by itself
-authorize a bulk global aggregation over all copies. The compiler cannot first
-reconstruct a global phase-polynomial or commuting-diagonal IR from the entire
-circuit. The certification rule is finite-alphabet, translation-invariant away
-from an `O(1)` anomaly zone, and collision-respecting.
+Now define `F_{w,b,rho}^{fl}` as a restricted basis-local flat compiler class.
+It receives only `L_B(C_{m,r})`, not the semantic provenance of the repeated
+diagonal terms. It may apply arbitrary unitarity-preserving local basis
+identities, bounded commutations, bounded peephole rewrites, and at most `b`
+bounded candidate-generation rounds. However, any rewrite whose effect is to
+fuse repeated occurrences of a phase term, or a bounded cluster of phase terms,
+must be justified by at most `rho` radius-`w` witness windows. The certificate
+must authorize the specific local fusion or bounded cluster being rewritten; a
+repeated local certificate profile cannot by itself authorize a bulk global
+aggregation over all copies. The compiler cannot construct an auxiliary
+representation keyed by global Pauli strings, global phase-polynomial terms,
+or commuting-diagonal Hamiltonian terms before performing the fusion. The
+certification rule is finite-alphabet, translation-invariant away from an
+`O(1)` anomaly zone, and collision-respecting.
 
 The theorem is therefore a restricted-class separation. It is not a lower bound
 against compilers that first reconstruct a global phase-polynomial, ZX, or
@@ -329,6 +333,11 @@ involving the anomaly zone for a fixed term `P_j`; for all sufficiently large
 `r`, a constant fraction of the `r` occurrences of that term remains
 represented by nontrivial lowered phase-gadget structure.
 
+This excludes a symmetric operation that aggregates all copies at once, because
+such an operation would require exactly the global semantic object indexed by
+the repeated Pauli term `P_j`. That operation belongs on the semantic side of
+the separation, not the restricted flat-recovery side.
+
 This argument holds independently for each of the `m` non-resonant diagonal
 terms. Summing the retained interior occurrences over all `m` terms gives a
 constant `c > 0`, independent of `m` and `r`, such that
@@ -349,6 +358,36 @@ This theorem is intentionally conditional. A compiler that reconstructs a
 global phase-polynomial or diagonal IR belongs on the semantic side of the
 separation. Thus a future tool that closes this gap by building such an IR
 would support, not refute, the representation-gap framing.
+
+#### Claim boundary of the separation
+
+The positive claim is:
+
+- there exists a family of quantum circuits where the compiler representation
+  changes the asymptotic recoverability of an optimization opportunity;
+- bounded flat recovery retains `Omega(rm)` phase-gadget structure;
+- pre-basis semantic coefficient aggregation retains only `O(m)` structure,
+  or `O(1)` in the fixed-width case.
+
+The claim is not:
+
+- a lower bound against all possible quantum compilers;
+- a proof that Qiskit, TKET, or PyZX are intrinsically unable to solve the
+  family;
+- a claim that optimized UCC is universally better than external compilers.
+
+A compiler that globally reconstructs a phase-polynomial, ZX,
+stabilizer-phase, or commuting-diagonal Hamiltonian representation has crossed
+from the flat-recovery side to the semantic side of the separation. If such a
+compiler recovers the same constant-size output, that supports the
+representation-gap framing because it identifies the missing semantic
+representation.
+
+The external baselines therefore play a diagnostic role. Their failure to
+recover the constant form on the configured `H D^r H` pipeline is evidence that
+these practical configurations did not reconstruct the required global
+diagonal representation under the fixed protocol. The empirical claim is a
+regime split, not universal optimizer dominance.
 
 #### Fixed-width corollary
 
@@ -371,24 +410,46 @@ tested scale.
 The `H · D^r · H` family is synthetic only in the controlled-experiment sense.
 It is the minimal fixed-width extraction of a structure that appears naturally
 in Fourier-based quantum algorithms. The quantum Fourier transform can be
-written, up to swaps and ordering conventions, as alternating Hadamard
-boundaries and controlled phase rotations. Within each phase stage, the
-controlled rotations are diagonal in the computational basis and commute.
-Approximate QFT keeps the same representation but truncates small-angle
-diagonal interactions. Phase estimation adds repeated controlled powers before
-an inverse Fourier transform; on an eigenstate of the simulated unitary, these
-controlled powers contribute coherent phase factors on the phase register, and
-the inverse-QFT stage again exposes a Fourier diagonal layer.
+written, up to swaps and ordering conventions, as stages of the form
+
+- `H_a · product_{b>a} CP_{a,b}(pi / 2^{b-a})`.
+
+The controlled-phase gates in a stage are diagonal in the computational basis
+and commute with one another. Thus each stage contains a commuting diagonal
+layer `D_m(theta)` adjacent to a Hadamard or Fourier basis-change boundary.
+Approximate QFT deletes sufficiently small-angle controlled phases from the
+same diagonal layer, so it preserves the relevant diagonality and
+commutativity.
+
+Phase estimation also contains the same object. Standard QPE applies
+controlled powers `CU^{2^k}` on a phase register and then applies an inverse
+QFT. If `U |psi> = exp(2 pi i phi) |psi>`, phase kickback maps a computational
+basis state `|x>` of the phase register to
+`exp(2 pi i phi x) |x>`, which is a diagonal phase-gradient operator on that
+register. When `U` is itself diagonal, the same conclusion holds directly at
+the controlled-power level. The subsequent inverse-QFT block supplies the
+Fourier basis-change context around these diagonal phase terms.
 
 Thus QFT, AQFT, and QPE all contain the same semantic object used by the
 witness: a bounded collection of commuting diagonal phase terms whose repeated
 use should be aggregated by coefficient addition before basis materialization.
 The experimental `fourier_phase_sandwich` family isolates this object as
-`H_Lambda D_m(theta)^r H_Lambda` so that inverse cancellation, routing, and
-unrelated algorithmic structure cannot explain the result. The official Qiskit
-QFT/AQFT and QPE-style controls then serve the complementary role: they test
-whether the same recoverability issue appears in natural algorithm-source
-circuits rather than only in the minimal separation witness.
+`H_Lambda D_m(theta)^r H_Lambda` so that inverse cancellation, routing,
+terminal swaps, non-Abelian subroutines, and approximation thresholds cannot
+explain the result.
+
+The natural algorithmic instances and the witness have different roles.
+QFT, AQFT, QPE, amplitude-estimation, and QFT-arithmetic benchmarks show that
+the semantic object is not invented solely for the experiment. The fixed-width
+`H D^r H` witness proves that once this object is repeated, a compiler
+restricted to bounded local recovery after lowering can be asymptotically
+separated from a compiler that preserves the object semantically. We do not
+claim that every full QFT or QPE instance must exhibit the same `Omega(r)` gap
+in practice; full algorithms may contain additional structure, frontend
+shortcuts, or routing effects. The claim is narrower and stronger: the Fourier
+diagonal layer is a natural algorithmic object, and there exists a controlled
+family built from that object on which representation alone creates the
+recoverability separation.
 
 ### 3.4 Why the restricted flat class is meaningful
 
@@ -765,10 +826,12 @@ argument, not by the software package being improved.
    mirrored/conjugation families test anti-regression and parity recovery
    rather than the main external-baseline separation.
 
-The current tables already cover the theorem witness, external-pipeline
-behavior, natural-source controls, and secondary recoverability evidence. The
-Fourier ablation is a causal check and should be read as part of this chain
-once its final results are frozen.
+The current tables now cover the theorem witness, external-pipeline behavior,
+causal ablation, natural-source controls, and secondary recoverability
+evidence. The Fourier ablation closes the mechanism check: when the
+Fourier-layer semantic path is disabled, the no-Fourier variant times out at
+every tested scale; Fourier-enabled UCC modes return the canonical `42`-gate
+circuit whenever they complete.
 
 ### 5.1 Controlled fixed-basis structural results
 
@@ -876,6 +939,35 @@ full result file should be read as empirical pipeline evidence rather than
 formal lower bounds on those tools: in this artifact configuration, they did
 not recover the global diagonal representation that the semantic theorem says
 is needed to close the gap.
+
+#### Fourier-layer semantic-path ablation
+
+To check whether the `42`-gate output is caused by the Fourier-layer semantic
+representation rather than ordinary downstream pass ordering, we disable the
+Fourier-layer IR path and rerun the fixed-width `H · D^r · H` witness.
+
+This is a mechanism ablation, not an optimized-versus-baseline ranking. The
+relevant comparison is between Fourier-enabled UCC modes and the no-Fourier
+semantic-path variant.
+
+| Requested Gates | qiskit opt3 | baseline UCC | optimized UCC | no Fourier-layer IR |
+|---:|---:|---:|---:|---:|
+| `4,000` | `9,588 / 3.800s` | `42 / 7.862s` | `42 / 7.593s` | timeout `>60s` |
+| `10,000` | `23,988 / 24.168s` | `42 / 33.269s` | `42 / 32.363s` | timeout `>60s` |
+| `20,000` | timeout `>60s` | timeout `>60s` | timeout `>60s` | timeout `>60s` |
+| `50,000` | timeout `>120s` | `42 / 76.554s` | `42 / 80.594s` | timeout `>120s` |
+| `100,000` | timeout `>120s` | `42 / 110.383s` | `42 / 110.816s` | timeout `>120s` |
+
+The ablation strengthens the causal interpretation of the Fourier-layer
+result. In the no-Fourier variant, the compiler never recovers a completed
+constant-size circuit under the timeout budget. In contrast, Fourier-enabled
+UCC paths recover the same `42`-gate canonical circuit whenever they finish.
+The `20k` row timed out for every method in this ablation run and should be
+read as a runtime caveat rather than a quality comparison.
+
+Therefore the constant form is tied to semantic Fourier-layer lifting and
+coefficient aggregation, not merely to a favorable ordering of flat
+post-lowering passes.
 
 ### 5.3 Official real instances
 
@@ -1133,10 +1225,12 @@ This study has several limitations.
 6. Strong external baselines still match or exceed the method on some families,
    for example `supermarq_hamiltonian_sim_8`; mirrored/conjugation cases are
    therefore framed as parity recovery rather than primary separation evidence.
-7. The Fourier ablation is a causal check for the implementation path. If
-   another semantic fast path also recovers the constant form, the mechanism
-   should be described more broadly as semantic Fourier-layer lifting rather
-   than as one specific code path.
+7. The Fourier ablation is a mechanism check for semantic Fourier lifting.
+   Disabling the Fourier-layer IR path times out at every tested scale, while
+   Fourier-enabled UCC modes recover the `42`-gate form whenever they complete.
+   Since both baseline and optimized Fourier-enabled modes can return the same
+   canonical output, the conclusion is about semantic Fourier recognition
+   broadly rather than one specific optimized branch shortcut.
 
 ## 8. Reproducibility
 
@@ -1167,9 +1261,11 @@ phase-gadget structure on `H_Lambda D_m^r H_Lambda`, whereas semantic
 coefficient aggregation emits `O(m)` structure and `O(1)` structure in the
 fixed-width case. The UCC implementation serves as the artifact showing that
 this distinction is operational: the Fourier witness gives a strict separation
-from tested flat pipelines, while mirrored/conjugation families show the
-secondary anti-regression role of semantic lifting by restoring parity on
-Grover-like workloads. The remaining challenge is to broaden these
+from tested flat pipelines, and the Fourier ablation shows that disabling the
+semantic Fourier path removes the completed constant-output recovery under the
+tested timeout budgets. Mirrored/conjugation families show the secondary
+anti-regression role of semantic lifting by restoring parity on Grover-like
+workloads. The remaining challenge is to broaden these
 recoverability gains beyond the present workload families and to characterize
 more precisely which practical pipelines belong on the flat-recovery side or
 the semantic-lifting side of the separation.
