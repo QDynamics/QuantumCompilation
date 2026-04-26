@@ -1,4 +1,3 @@
-@@ -0,0 +1,351 @@
 import argparse
 import json
 import math
@@ -17,7 +16,11 @@ from qiskit.transpiler.passes import CommutativeInverseCancellation
 
 # Add REPO_ROOT to sys.path
 THIS_FILE = Path(__file__).resolve()
+# Robust repo root detection for cloud VMs
 REPO_ROOT = THIS_FILE.parents[2]
+if not (REPO_ROOT / "ucc").exists() and THIS_FILE.parents[1].name == "research":
+    REPO_ROOT = THIS_FILE.parents[1].parent
+
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -245,6 +248,7 @@ def run_parent(
             sys.stderr.write(f"Size: {target_gates}, Method: {method} ... ")
             sys.stderr.flush()
             
+            # Substantial timeout for large scale
             timeout_s = 120 if target_gates < 20000 else 600
             
             res = launch_worker(
@@ -314,9 +318,9 @@ def main() -> None:
     parser.add_argument("--method", choices=METHODS)
     parser.add_argument("--target-gates", type=int)
     parser.add_argument("--python-executable", default=sys.executable)
-    parser.add_argument("--json-out", type=Path, default=REPO_ROOT / "ucc/research/resource_consequence_results.json")
-    parser.add_argument("--md-out", type=Path, default=REPO_ROOT / "ucc/research/resource_consequence_results.md")
-    parser.add_argument("--summary-out", type=Path, default=REPO_ROOT / "ucc/research/resource_consequence_results_summary.md")
+    parser.add_argument("--json-out", type=Path, default=Path("research/resource_consequence_results.json"))
+    parser.add_argument("--md-out", type=Path, default=Path("research/resource_consequence_results.md"))
+    parser.add_argument("--summary-out", type=Path, default=Path("research/resource_consequence_results_summary.md"))
     args = parser.parse_args()
 
     if args.worker:
@@ -333,20 +337,27 @@ def main() -> None:
         python_executable=args.python_executable,
     )
 
-    args.json_out.parent.mkdir(parents=True, exist_ok=True)
-    with open(args.json_out, "w") as f:
-        json.dump(payload, f, indent=2)
-    print(f"\nWrote JSON results to {args.json_out}")
+    print("\n--- FINAL JSON RESULTS START ---")
+    print(json.dumps(payload))
+    print("--- FINAL JSON RESULTS END ---\n")
 
-    md_content = markdown_summary(payload)
-    with open(args.md_out, "w") as f:
-        f.write(md_content)
-    print(f"Wrote Markdown report to {args.md_out}")
+    try:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.json_out, "w") as f:
+            json.dump(payload, f, indent=2)
+        print(f"Wrote JSON results to {args.json_out}")
 
-    with open(args.summary_out, "w") as f:
-        f.write(md_content)
-    print(f"Wrote Markdown summary report to {args.summary_out}")
+        md_content = markdown_summary(payload)
+        with open(args.md_out, "w") as f:
+            f.write(md_content)
+        print(f"Wrote Markdown report to {args.md_out}")
 
+        with open(args.summary_out, "w") as f:
+            f.write(md_content)
+        print(f"Wrote Markdown summary report to {args.summary_out}")
+    except Exception as e:
+        print(f"Warning: Failed to write output files: {e}")
+        print("Data is available in the log above.")
 
 if __name__ == "__main__":
     main()
