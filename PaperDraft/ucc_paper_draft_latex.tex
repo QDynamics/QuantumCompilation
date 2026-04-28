@@ -66,14 +66,17 @@ term controller with Fourier-layer, repeated, inverse, mirrored, and
 conjugation terms. The evidence role split is deliberate. Fourier-layer circuits
 provide the primary separation witness; mirrored and conjugation circuits
 provide secondary anti-regression evidence by restoring parity with strong flat
-optimizers on Grover-like structures. On the fixed-width
+optimizers on Grover-like structures. On the canonical fixed-width
 $H D^r H$ witness, the semantic artifact reduces inputs of approximately
 $4$k, $10$k, $20$k, $50$k, and $100$k gates to $42$ gates, depth $24$, and
 $12$ \texttt{cx} gates, while \texttt{qiskit opt3} grows to $9{,}588$,
 $23{,}988$, and $47{,}988$ gates at the first three sizes and times out at
-$50$k and $100$k. A Fourier-layer ablation removes this completed
-constant-output recovery, and a resource-consequence experiment shows that,
-under a rotation-count Clifford+$T$ proxy at precision $10^{-10}$,
+$50$k and $100$k. A generalized fixed-width suite varies the diagonal topology
+and angle family at $n=4$ and gives $42/42$ strict structural-quality wins over
+\texttt{qiskit opt3}; semantic UCC completes every comparable point, while
+\texttt{qiskit opt3} times out on $14$ of them. A Fourier-layer ablation removes
+this completed constant-output recovery, and a resource-consequence experiment
+shows that, under a rotation-count Clifford+$T$ proxy at precision $10^{-10}$,
 semantic-first compilation keeps a constant $T$-proxy of $2{,}200$, whereas
 materialize-first \texttt{qiskit opt3} grows from $479{,}300$ to
 $2{,}399{,}300$ before timing out.
@@ -1165,7 +1168,7 @@ The fixed target basis used for the main non-routed comparisons is
 B = [\texttt{cx},\texttt{rx},\texttt{ry},\texttt{rz},\texttt{h}].
 \]
 
-For controlled structured studies, we focus on repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$, QPE-style circuits, QAOA-ring circuits, mirrored Grover-like circuits, and the fixed-width $H D^r H$ Fourier-layer witness family. The official real instances are \texttt{PhaseEstimation}, \texttt{GroverOperator}, and \texttt{QAOAAnsatz}. The public benchmark suites include representative cases from \texttt{MQT Bench} and \texttt{SupermarQ}. The hardware-aware study uses a fixed $20$-qubit bidirectional line backend with native operations \texttt{u}, \texttt{sx}, \texttt{p}, \texttt{cx}, \texttt{measure}, and \texttt{id}.
+For controlled structured studies, we focus on repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$, QPE-style circuits, QAOA-ring circuits, mirrored Grover-like circuits, and the fixed-width $H D^r H$ Fourier-layer witness family. The Fourier witness is evaluated both as the canonical full-pair diagonal layer and as a generalized fixed-width suite that varies diagonal topology and angle family at $n=4$. The official real instances are \texttt{PhaseEstimation}, \texttt{GroverOperator}, and \texttt{QAOAAnsatz}. The public benchmark suites include representative cases from \texttt{MQT Bench} and \texttt{SupermarQ}. The hardware-aware study uses a fixed $20$-qubit bidirectional line backend with native operations \texttt{u}, \texttt{sx}, \texttt{p}, \texttt{cx}, \texttt{measure}, and \texttt{id}.
 
 \subsection{Role of Controlled Witness Families}
 
@@ -1179,7 +1182,12 @@ layers---but fixes the width so that the semantic representation has a
 constant number of terms while the flat materialized representation grows with
 the repetition count. This fixed-width choice is what makes the
 $\Omega(r)$ versus $O(1)$ corollary experimentally visible as the constant
-$42$-gate output in \cref{tab:fourier-phase-sandwich}.
+$42$-gate output in the canonical full-pair case of
+\cref{tab:fourier-phase-sandwich}. The generalized witness suite keeps the
+same fixed-width proof regime but varies the diagonal topology and angle
+family, so it tests whether the repetition-independent semantic output is tied
+to one hand-picked phase layer or to the broader commuting-diagonal
+representation.
 
 The witness family is therefore used to validate the theorem, not to claim
 that all workloads have the same structure. To connect the construction back
@@ -1213,11 +1221,11 @@ QFT arithmetic / AE & Fourier-style phase accumulation in arithmetic or estimati
 & Draper-QFT-adder and amplitude-estimation controls
 & parity with \texttt{qiskit opt3} and large baseline-UCC regression repair \\
 Minimal witness & fixed-width commuting diagonal phase layer between basis-change boundaries
-& $H D^r H$
-& formal separation witness: constant $42$-gate output versus flat-pipeline growth or timeout \\
+& canonical and generalized $H D^r H$ sweeps
+& formal separation witness: repetition-independent semantic output versus flat-pipeline growth or timeout \\
 \bottomrule
 \end{tabular}
-\caption{Natural algorithmic sources for the Fourier-layer semantic object and how they are used experimentally. The formal separation is proved on the minimal fixed-width witness; the algorithmic controls show that the witness abstracts structure present in QFT, AQFT, QPE, amplitude-estimation, and QFT-arithmetic workloads.}
+\caption{Natural algorithmic sources for the Fourier-layer semantic object and how they are used experimentally. The formal separation is proved on the minimal fixed-width witness; the generalized witness suite varies topology and angle family within that fixed-width regime, while the algorithmic controls show that the witness abstracts structure present in QFT, AQFT, QPE, amplitude-estimation, and QFT-arithmetic workloads.}
 \label{tab:natural-sources}
 \end{table*}
 
@@ -1260,8 +1268,10 @@ argument, not by the software package being improved. The evidence chain is:
 The tables and figures are organized around this evidence chain rather than
 around a ranking of software packages. The visual spine of the results is:
 \cref{fig:fourier-separation} for the primary fixed-width separation,
-\cref{fig:fourier-ablation} for the causal mechanism check, and
-\cref{fig:resource-consequence} for the resource-estimation consequence.
+\cref{tab:generalized-fourier-witness} for the generalized fixed-width
+topology/angle sweep, \cref{fig:fourier-ablation} for the causal mechanism
+check, and \cref{fig:resource-consequence} for the resource-estimation
+consequence.
 The Fourier ablation closes the mechanism check: when the Fourier-layer
 semantic path is disabled, the no-Fourier variant times out at every tested
 scale; Fourier-enabled UCC modes return the canonical $42$-gate circuit
@@ -1369,6 +1379,36 @@ gates & gates & Gates & Depth & CX & Gates & Runtime \\
 \label{tab:fourier-phase-sandwich}
 \end{table}
 
+To check that the primary witness is not a single hand-picked diagonal block,
+we also run a generalized fixed-width Fourier witness suite. The circuit form
+remains $H D^r H$ at $n=4$, but the diagonal layer $D$ varies along two axes:
+topology and angle family. The topology axis uses chain, ring, sparse
+half-density, and full-pair controlled-phase networks, each with local $RZ$
+terms. The angle axis uses seeded nonresonant angles, QFT-like dyadic angles,
+and mixed signed angles. The size axis spans $4$k, $10$k, $20$k, and $50$k
+requested input gates. This suite therefore generalizes the theorem witness
+within the fixed-width regime of \cref{cor:fixed-width-fourier}; it is not a
+width-scaling experiment.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}lccccX@{}}
+\toprule
+Topology & Angles & Points & \texttt{qiskit} ok/TO & Wins & Semantic output signatures \\
+\midrule
+chain CP & 3 & 12 & 9 / 3 & 12 / 12 & 23--27 gates, 17--18 depth, 6 \texttt{cx} \\
+ring CP & 3 & 12 & 9 / 3 & 12 / 12 & 32 gates, 23 depth, 8 \texttt{cx} \\
+sparse CP $0.5$ & 3 & 12 & 6 / 6 & 12 / 12 & 25--27 gates, 11--12 depth, 6 \texttt{cx} \\
+full-pair CP & 2 & 6 & 4 / 2 & 6 / 6 & 42 gates, 24 depth, 12 \texttt{cx} \\
+\midrule
+Total comparable points & -- & 42 & 28 / 14 & 42 / 42 & repetition-independent at fixed topology/angle \\
+\bottomrule
+\end{tabularx}
+\caption{Generalized fixed-width Fourier witness suite. Each point is a paired comparison between semantic UCC and \texttt{qiskit opt3} on an $H D^r H$ circuit at $n=4$, with requested sizes up to $50$k gates. Semantic UCC completes every comparable point and wins structurally in all $42/42$ comparisons under the lexicographic metric (total gates, depth, \texttt{cx}). The semantic output is independent of the repetition count within each fixed topology and angle family, while \texttt{qiskit opt3} either grows with size or times out. PyZX and TKET were unavailable in this particular generalized run, so the external algebraic and peephole stress tests remain the canonical fixed-width comparisons in \cref{tab:external-failure-matrix}.}
+\label{tab:generalized-fourier-witness}
+\end{table*}
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.95\linewidth]{figures/fourier_separation.pdf}
@@ -1377,14 +1417,17 @@ gates & gates & Gates & Depth & CX & Gates & Runtime \\
 \end{figure}
 
 These data should be read together with
-\cref{fig:fourier-separation,thm:fourier-layer-separation,cor:fixed-width-fourier}.
+\cref{fig:fourier-separation,tab:generalized-fourier-witness,thm:fourier-layer-separation,cor:fixed-width-fourier}.
 The experimental family is the fixed-width regime of the theorem: the semantic
 path aggregates the repeated commuting diagonal layer and emits a
 constant-size circuit, while post-lowering baselines either grow with input
-size or time out under the fixed protocol. The PyZX and TKET rows are not used
-as formal lower bounds on those systems; they are empirical evidence that, in
-this pipeline, strong external tools did not recover the global diagonal
-representation that the semantic theorem identifies as necessary.
+size or time out under the fixed protocol. The generalized suite shows that
+this signature is stable across multiple diagonal topologies and angle
+families at the same fixed width, including QFT-like dyadic angles and mixed
+signed angles. The PyZX and TKET rows are not used as formal lower bounds on
+those systems; they are empirical evidence that, in the canonical pipeline,
+strong external tools did not recover the global diagonal representation that
+the semantic theorem identifies as necessary.
 
 \begin{table*}[t]
 \centering
@@ -1906,8 +1949,12 @@ The results support a single representation claim. Basis lowering can preserve
 unitary semantics while destroying the bounded local evidence needed to recover
 global Fourier-layer structure. The $H D^r H$ family is the primary witness:
 semantic phase aggregation gives a fixed-width $\Omega(r)$ versus $O(1)$
-separation, and the corresponding experiment exhibits the same constant-output
-signature against the tested flat pipelines.
+separation, and the corresponding experiments exhibit the same
+repetition-independent output signature against the tested flat pipelines. The
+new generalized witness suite strengthens this point: across $42$ comparable
+fixed-width topology/angle/scale points, semantic UCC wins structurally against
+\texttt{qiskit opt3} in every case, while the semantic output remains tied to
+the diagonal term structure rather than to the repetition count.
 
 The ablation and resource-consequence experiments identify the mechanism. When
 the Fourier-layer semantic path is disabled, completed constant-output recovery
@@ -1942,14 +1989,14 @@ measured.
 This study has several limitations.
 \begin{enumerate}[leftmargin=1.5em]
     \item The theorem is a restricted-class separation, not a lower bound against all possible quantum compilers. A compiler that reconstructs a global phase-polynomial, ZX, or commuting-diagonal IR belongs to the semantic side of the separation.
-    \item The fixed-width $H D^r H$ family is intentionally structured. It is a minimal theorem witness, not a claim that all QFT or QPE instances exhibit the same $\Omega(r)$ gap.
+    \item The fixed-width $H D^r H$ family is intentionally structured. It is a minimal theorem witness, not a claim that all QFT or QPE instances exhibit the same $\Omega(r)$ gap. The generalized witness suite varies topology and angle family at $n=4$, but it is not yet a width-scaling experiment.
     \item The external-baseline evidence is pipeline-specific. PyZX and TKET are evaluated through the artifact's QASM/Qiskit conversion and fixed-basis protocol, so their failure to recover the constant form is evidence about this configured pipeline rather than a theorem about those tools in all modes.
     \item The evaluation is centered on UCC and Qiskit-flavored workflows.
     \item The method is bounded and heuristic rather than globally optimal.
     \item Strong external baselines may still match or exceed the method on some families; mirrored and conjugation cases are therefore framed as parity recovery rather than primary separation evidence.
     \item The source-level short-circuit path depends on Qiskit-native all-to-all composite inputs and may not transfer unchanged to other frontend representations or compiler stacks.
     \item The hardware-aware stability evidence covers only a finite fixed seed portfolio and one chosen backend family, so it should not be read as a guarantee of robustness across all transpiler randomness or hardware settings.
-    \item The Fourier ablation is a mechanism check for semantic Fourier lifting. Disabling the Fourier-layer IR path times out at every tested scale, while Fourier-enabled UCC modes recover the $42$-gate form whenever they complete. Since multiple Fourier-enabled modes can return the same canonical output, the conclusion is about semantic Fourier recognition broadly rather than one specific artifact shortcut.
+    \item The Fourier ablation is a mechanism check for semantic Fourier lifting. Disabling the Fourier-layer IR path times out at every tested scale, while Fourier-enabled UCC modes recover the $42$-gate form whenever they complete. Since multiple Fourier-enabled modes can return the same canonical output, the conclusion is about semantic Fourier recognition broadly rather than one specific artifact shortcut. The generalized suite extends the structural-quality evidence, but the ablation was run on the canonical full-pair witness.
     \item The resource-consequence experiment uses a rotation-count proxy for Clifford+$T$ synthesis cost at fixed precision, rather than exact optimal synthesis. It supports the scaling consequence of delayed semantic aggregation, not a claim about optimal $T$ counts for every synthesis backend.
 \end{enumerate}
 
@@ -1981,12 +2028,14 @@ $\Omega(rm)$ phase-gadget structure on $H_{\Lambda}D_m^rH_{\Lambda}$, whereas
 semantic coefficient aggregation emits $O(m)$ structure and $O(1)$ structure in
 the fixed-width case.
 
-The UCC artifact makes this distinction operational. The Fourier witness gives a
-strict separation from tested flat pipelines, the Fourier ablation ties the
-constant output to semantic lifting, and the resource-consequence experiment
-shows how the same representation gap can inflate rotation-count synthesis
-proxies. Mirrored/conjugation families show the secondary anti-regression role
-of semantic lifting by restoring parity on Grover-like workloads. The remaining
+The UCC artifact makes this distinction operational. The canonical Fourier
+witness gives a strict separation from tested flat pipelines, the generalized
+fixed-width sweep shows the same repetition-independent semantic behavior
+across topology and angle-family axes, the Fourier ablation ties the constant
+output to semantic lifting, and the resource-consequence experiment shows how
+the same representation gap can inflate rotation-count synthesis proxies.
+Mirrored/conjugation families show the secondary anti-regression role of
+semantic lifting by restoring parity on Grover-like workloads. The remaining
 challenge is to broaden these recoverability gains beyond the present workload
 families and to characterize more precisely which practical pipelines belong on
 the flat-recovery side or the semantic-lifting side of the separation.

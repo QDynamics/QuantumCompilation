@@ -468,7 +468,7 @@
   当前结果按证据链组织：
 
   \begin{enumerate}
-    \item \textbf{Primary theorem witness}: fixed-width $H D^r H$
+    \item \textbf{Primary theorem witness}: canonical and generalized fixed-width $H D^r H$
     \item \textbf{External pipeline diagnostics}: Qiskit / PyZX / TKET
     \item \textbf{Causal ablation}: disable Fourier semantic path
     \item \textbf{Resource consequence}: semantic-first vs materialize-first
@@ -504,6 +504,55 @@
   \[
     \Omega(r)\quad\text{vs}\quad O(1).
   \]
+\end{frame}
+
+\begin{frame}{generalized witness suite}
+  \small
+  新数据把 canonical full-pair witness 扩成固定宽度参数化 suite：
+
+  \vspace{0.4em}
+  \begin{itemize}
+    \item 固定 $n=4$，不声称已经完成 width sweep
+    \item topology: chain / ring / sparse-0.5 / full-pair CP
+    \item angle family: nonresonant seeded / QFT-dyadic / mixed-signed
+    \item sizes: 4k / 10k / 20k / 50k
+  \end{itemize}
+
+  \vspace{0.6em}
+  核心结果：
+  \[
+    \text{semantic UCC vs qiskit opt3:
+    strict structural wins } 42/42.
+  \]
+
+  \vspace{0.4em}
+  \texttt{qiskit opt3} 在 28 个 comparable points 完成，在 14 个 points timeout；
+  semantic UCC 完成全部 42 个 comparable points。
+\end{frame}
+
+\begin{frame}{generalized witness: topology summary}
+  \scriptsize
+  \begin{tabular}{lrrrr}
+    \toprule
+    Topology & Points & Qiskit ok & Qiskit timeout & Semantic wins \\
+    \midrule
+    chain CP & 12 & 9 & 3 & 12/12 \\
+    ring CP & 12 & 9 & 3 & 12/12 \\
+    sparse CP 0.5 & 12 & 6 & 6 & 12/12 \\
+    full-pair CP & 6 & 4 & 2 & 6/6 \\
+    \midrule
+    total & 42 & 28 & 14 & 42/42 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.8em}
+  读法：
+  \[
+    \text{output depends on diagonal term structure, not on repetition count } r.
+  \]
+
+  \vspace{0.4em}
+  full-pair CP 是 42-gate canonical case；chain/ring/sparse 给出同一原理的拓扑鲁棒性。
 \end{frame}
 
 \begin{frame}{figure: Fourier-layer separation}
@@ -732,6 +781,7 @@
     \item basis lowering preserves unitary semantics
     \item basis lowering can destroy bounded local recoverability
     \item fixed-width Fourier-layer family gives $\Omega(r)$ vs $O(1)$ separation
+    \item generalized fixed-width suite gives $42/42$ structural wins across topology and angle axes
     \item semantic-first aggregation keeps resource proxy constant
     \item UCC artifact demonstrates the principle operationally
   \end{itemize}
@@ -751,7 +801,7 @@
 
   \begin{enumerate}
     \item theorem 给出 representation-dependent separation
-    \item fixed-width Fourier experiment 实现 $\Omega(r)$ vs $O(1)$ 签名
+    \item canonical 和 generalized fixed-width Fourier experiments 实现 $\Omega(r)$ vs $O(1)$ 签名
     \item ablation 和 resource experiment 说明机制来自 semantic Fourier lifting
     \item real / public benchmarks 定义 scope：semantic lifting 修复 regression，但作用是选择性的
   \end{enumerate}
@@ -788,8 +838,12 @@
   \[
     \text{tested flat pipelines grow or timeout},
     \qquad
-    \text{semantic UCC emits }42\text{ gates}.
+    \text{semantic UCC output is independent of }r.
   \]
+
+  \vspace{0.5em}
+  canonical full-pair case emits 42 gates；generalized suite gives 42/42
+  strict structural wins over \texttt{qiskit opt3} at $n=4$.
 \end{frame}
 
 \end{document}
