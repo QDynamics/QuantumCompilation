@@ -11,6 +11,7 @@ it in the frozen `#662(issue)` artifact.
 | `fixed_basis_external_baselines_100k.json` / `.md` | `compare_external_baselines.py --target-gates 100000` |
 | `scaling_results.json` / `.md` | `scaling_study.py` |
 | `ablation_results_10k.json` / `.md` | `ablation_study.py --target-gates 10000` |
+| `resource_consequence_results.json` / `.md` / `_summary.md` | `resource_consequence_experiment.py` |
 | `hardware_aware_results.json` / `.md` | `compare_hardware_aware.py --seed-transpiler 12345` |
 | `stability_results.json` / `.md` | `stability_repeated_runs.py --repeats 5 --hw-seed 12345` |
 | `stability_seed4_results.json` / `.md` | `stability_repeated_runs.py --repeats 3 --hw-seed 0` |

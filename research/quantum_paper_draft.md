@@ -32,7 +32,11 @@ to `42` gates, depth `24`, and `12` `cx` gates, while `qiskit opt3` grows to
 `9,588`, `23,988`, and `47,988` gates at the first three sizes and times out at
 `50k` and `100k`. Across official Qiskit instances and public `MQT
 Bench`/`SupermarQ` cases, the same mechanism fixes severe UCC regressions
-without claiming universal dominance over external compilers.
+without claiming universal dominance over external compilers. A
+resource-consequence experiment further shows that, under a rotation-count
+Clifford+T proxy at precision `1e-10`, semantic-first compilation keeps a
+constant T-proxy of `2,200`, whereas materialize-first `qiskit opt3` grows from
+`479,300` to `2,399,300` before timing out.
 
 ## 1. Introduction
 
@@ -389,6 +393,15 @@ these practical configurations did not reconstruct the required global
 diagonal representation under the fixed protocol. The empirical claim is a
 regime split, not universal optimizer dominance.
 
+This also makes the claim falsifiable in the right way. A direct flat-stream
+pipeline that recovered the constant form without constructing any global
+phase-polynomial, ZX, stabilizer-phase, or commuting-diagonal representation
+would challenge the adequacy of `F_{w,b,rho}^{fl}` as a model of bounded flat
+recovery. A pipeline that succeeds by constructing such a representation would
+not challenge the theorem; it would provide an independent implementation of
+the semantic side. This distinction prevents the restricted class from being
+tuned post hoc to named software outcomes.
+
 #### Fixed-width corollary
 
 If the Fourier-layer width is fixed to a constant `m0 > w` and the
@@ -451,6 +464,16 @@ diagonal layer is a natural algorithmic object, and there exists a controlled
 family built from that object on which representation alone creates the
 recoverability separation.
 
+Natural-source control matrix:
+
+| Source | Semantic object | Experimental control | Observed role |
+|---|---|---|---|
+| QFT | Hadamard stages plus commuting controlled-phase layers | `algorithmic_qft`, `qft_forward_repeat` | no-worse quality across all five sizes; smaller-size runtime/scalability wins |
+| AQFT | truncated QFT diagonal layer with the same commuting structure | `algorithmic_aqft` | no-worse quality across all five sizes; confirms the object is not tied to exact full QFT |
+| QPE | controlled phase accumulation and inverse-QFT context | `phase_estimation_real`, `mqt_qpeexact_32`, `mqt_qpeinexact_24`, `qpe_style` | parity/recovery on real and public instances; mixed `qpe_style` scaling, so not the main separation witness |
+| QFT arithmetic / amplitude estimation | Fourier-style phase accumulation in arithmetic or estimation routines | `mqt_draper_qft_adder_32`, `mqt_ae_8` | parity with `qiskit opt3` and large baseline-UCC regression repair |
+| Minimal witness | fixed-width commuting diagonal phase layer between basis-change boundaries | `fourier_phase_sandwich = H D^r H` | formal separation witness: constant `42`-gate semantic output versus flat-pipeline growth or timeout |
+
 ### 3.4 Why the restricted flat class is meaningful
 
 The restricted class `F_{w,b,rho}^{fl}` is not meant to describe all possible
@@ -484,6 +507,29 @@ several strong practical pipelines, as configured in the artifact, behave
 consistently with that barrier. A future compiler that explicitly reconstructs
 and aggregates the global phase-polynomial would not contradict the theorem; it
 would instantiate the semantic compiler side.
+
+The class should therefore be read as a representation boundary, not as a
+performance ranking. The empirical question is whether practical pipelines, as
+configured in the artifact, behave on the flat-recovery side or the
+semantic-lifting side for this family. The theoretical question is why the
+flat-recovery side cannot use repeated local evidence alone to justify a
+global diagonal aggregation.
+
+Operational classification boundary:
+
+For the Fourier-layer family, any pipeline that recovers the constant
+fixed-width output must do at least one of the following:
+
+- reconstruct a global semantic representation equivalent to a
+  phase-polynomial, ZX, stabilizer-phase, or commuting-diagonal Hamiltonian
+  object;
+- use nonlocal provenance information from before basis lowering;
+- violate the bounded local certification assumptions defining
+  `F_{w,b,rho}^{fl}`.
+
+Thus a successful future flat-looking implementation would not by itself
+refute the theorem. It would classify the implementation by identifying which
+global semantic or nonlocal mechanism it uses.
 
 ### 3.5 A phase-ladder family separation theorem
 
@@ -819,15 +865,18 @@ argument, not by the software package being improved.
 3. **Causal ablation**:
    disabling the Fourier-layer semantic path should remove the constant-output
    behavior if semantic aggregation is the operative mechanism.
-4. **Natural-source controls**:
+4. **Resource consequence**:
+   semantic-first versus materialize-first resource estimates test whether the
+   same representation gap inflates rotation and Clifford+T proxy costs.
+5. **Natural-source controls**:
    QFT, AQFT, QPE, amplitude-estimation, and QFT-arithmetic cases test whether
    the witness extracts structure that appears in algorithmic circuits.
-5. **Secondary recoverability evidence**:
+6. **Secondary recoverability evidence**:
    mirrored/conjugation families test anti-regression and parity recovery
    rather than the main external-baseline separation.
 
 The current tables now cover the theorem witness, external-pipeline behavior,
-causal ablation, natural-source controls, and secondary recoverability
+causal ablation, resource consequence, natural-source controls, and secondary recoverability
 evidence. The Fourier ablation closes the mechanism check: when the
 Fourier-layer semantic path is disabled, the no-Fourier variant times out at
 every tested scale; Fourier-enabled UCC modes return the canonical `42`-gate
@@ -940,6 +989,17 @@ formal lower bounds on those tools: in this artifact configuration, they did
 not recover the global diagonal representation that the semantic theorem says
 is needed to close the gap.
 
+External-pipeline failure matrix:
+
+| Pipeline | Representation tested | Observed behavior on `H D^r H` | Interpretation |
+|---|---|---|---|
+| optimized UCC semantic path | pre-basis Fourier-layer term | `42` gates, depth `24`, `12` cx at every tested scale | implements the semantic side of the theorem |
+| `qiskit opt3` | preset target-basis pipeline | `9,588`, `23,988`, `47,988` gates at 4k, 10k, 20k; timeout at 50k and 100k | grows as a materialize-first pipeline that did not recover the global diagonal layer |
+| Qiskit commutative inverse cancellation | targeted inverse/commutation control | `13,574`, `33,974` gates at 4k, 10k; timeout from 20k | confirms that inverse-oriented cancellation is not the missing mechanism |
+| PyZX pipeline | Qiskit--QASM--PyZX--Qiskit algebraic stress test | `13,574`, `33,974`, `67,974` gates at 4k, 10k, 20k; timeout at larger sizes | did not recover global phase-polynomial aggregation in this configured pipeline |
+| TKET FullPeephole | strong peephole-oriented external baseline | timeout from 4k under the fixed protocol | probes the bounded local/peephole side rather than a global semantic lift |
+| no-Fourier UCC ablation | same artifact with Fourier-layer semantic path disabled | timeout at every tested scale in the ablation run | causal check that constant output depends on Fourier-layer semantic lifting |
+
 #### Fourier-layer semantic-path ablation
 
 To check whether the `42`-gate output is caused by the Fourier-layer semantic
@@ -968,6 +1028,59 @@ read as a runtime caveat rather than a quality comparison.
 Therefore the constant form is tied to semantic Fourier-layer lifting and
 coefficient aggregation, not merely to a favorable ordering of flat
 post-lowering passes.
+
+#### Resource-consequence experiment
+
+The Fourier-layer separation is not only a gate-count phenomenon. To test
+whether the same representation gap affects resource estimation, we compare a
+semantic-first path against materialize-first paths on the
+`fourier_phase_sandwich` family. The semantic-first path performs Fourier-layer
+aggregation before target-basis materialization. The materialize-first paths
+first lower or optimize the expanded circuit using `qiskit opt3` or a
+no-Fourier-IR UCC path.
+
+The resource proxy is:
+
+- `T_epsilon(R) = ceil(3 log2(1/epsilon)) R`,
+
+where `R` is the number of arbitrary `rx`/`ry`/`rz` rotations. This is a
+reproducible synthesis-cost proxy, not an exact optimal T-count.
+
+Each non-timeout cell below reports:
+
+- `gates / cx / rotations / T_proxy(1e-10)`.
+
+| Requested Gates | semantic first | materialize-first qiskit opt3 | materialize-first no-Fourier UCC |
+|---:|---:|---:|---:|
+| `4,000` | `42 / 12 / 22 / 2,200` | `9,588 / 4,788 / 4,793 / 479,300` | `9,588 / 4,788 / 4,793 / 479,300` |
+| `10,000` | `42 / 12 / 22 / 2,200` | `23,988 / 11,988 / 11,993 / 1,199,300` | timeout `>120s` |
+| `20,000` | `42 / 12 / 22 / 2,200` | `47,988 / 23,988 / 23,993 / 2,399,300` | timeout `>600s` |
+| `50,000` | `42 / 12 / 22 / 2,200` | timeout `>600s` | timeout `>600s` |
+| `100,000` | `42 / 12 / 22 / 2,200` | timeout `>600s` | timeout `>600s` |
+
+At precision `1e-6` and `1e-12`, semantic-first remains constant at T-proxy
+values `1,320` and `2,640`, respectively. Materialize-first `qiskit opt3`
+reaches `1,439,580` and `2,879,160` at `20k` before timing out at larger sizes.
+
+This connects the recoverability theorem to a fault-tolerant compilation
+concern: if coefficient aggregation is delayed until after basis
+materialization, resource estimates can be inflated by the unrecovered rotation
+multiplicity.
+
+The physical point is the ordering of semantic aggregation relative to
+synthesis. In a fault-tolerant pipeline, arbitrary rotations are eventually
+approximated by discrete resources such as Clifford+T sequences. If the
+compiler first materializes `r` separate rotations and only later estimates or
+synthesizes them, the resource estimator sees `r` independent approximation
+tasks. A semantic-first pipeline instead combines the coefficients first and
+presents one aggregated rotation per phase term.
+
+The proxy above deliberately does not model optimal number-theoretic synthesis
+or cancellation inside a synthesized Clifford+T sequence. It isolates the
+representation-level multiplicity that enters any resource estimator before
+backend-specific synthesis optimizations. Therefore the resource-consequence
+result is an FTQC relevance argument for pre-synthesis semantic aggregation,
+not an exact optimal T-count claim.
 
 ### 5.3 Official real instances
 
@@ -1198,7 +1311,14 @@ broad anti-regression and quality-recovery behavior, while mixed cases such as
 `supermarq_hamiltonian_sim_8` show that the semantic branch is selective rather
 than uniformly dominant.
 
-Fifth, runtime remains a real systems constraint. The method helps on
+Fifth, the resource-consequence experiment shows that the recoverability gap
+can propagate into synthesis-oriented resource estimates. Under a simple
+precision-dependent Clifford+T proxy, semantic-first compilation keeps the
+Fourier witness at constant rotation and T-proxy cost, while materialize-first
+pipelines grow by orders of magnitude or time out. This is the main evidence
+connecting the compilation theorem to FTQC resource estimation.
+
+Sixth, runtime remains a real systems constraint. The method helps on
 repeat-heavy and Fourier-like circuits and now behaves much better on the
 official real instances, but backend-aware Grover-style routing remains
 difficult and some public-suite families reduce only to parity with strong
@@ -1231,6 +1351,10 @@ This study has several limitations.
    Since both baseline and optimized Fourier-enabled modes can return the same
    canonical output, the conclusion is about semantic Fourier recognition
    broadly rather than one specific optimized branch shortcut.
+8. The resource-consequence experiment uses a precision-dependent
+   rotation-count proxy for Clifford+T synthesis cost rather than exact optimal
+   synthesis. It supports the scaling consequence of delayed semantic
+   aggregation, not a claim about optimal T-counts for every synthesis backend.
 
 ## 8. Reproducibility
 
@@ -1263,7 +1387,9 @@ fixed-width case. The UCC implementation serves as the artifact showing that
 this distinction is operational: the Fourier witness gives a strict separation
 from tested flat pipelines, and the Fourier ablation shows that disabling the
 semantic Fourier path removes the completed constant-output recovery under the
-tested timeout budgets. Mirrored/conjugation families show the secondary
+tested timeout budgets. The resource-consequence experiment shows that the
+same representation choice can inflate rotation and Clifford+T proxy estimates
+when aggregation is delayed until after materialization. Mirrored/conjugation families show the secondary
 anti-regression role of semantic lifting by restoring parity on Grover-like
 workloads. The remaining challenge is to broaden these
 recoverability gains beyond the present workload families and to characterize

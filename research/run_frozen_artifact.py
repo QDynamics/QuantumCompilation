@@ -65,6 +65,14 @@ EXPERIMENTS: dict[str, Experiment] = {
         extra_args=("--target-gates", "10000"),
         needs_baseline_repo=False,
     ),
+    "resource_consequence": Experiment(
+        name="resource_consequence",
+        script="resource_consequence_experiment.py",
+        json_out="resource_consequence_results.json",
+        md_out="resource_consequence_results.md",
+        needs_baseline_repo=False,
+        needs_experimental_repo=False,
+    ),
     "hardware_seed_12345": Experiment(
         name="hardware_seed_12345",
         script="compare_hardware_aware.py",
@@ -140,6 +148,7 @@ SUITES: dict[str, tuple[str, ...]] = {
         "fixed_basis_100k",
         "scaling",
         "ablation_10k",
+        "resource_consequence",
     ),
     "stability": (
         "stability_seed_12345",
@@ -156,6 +165,7 @@ SUITES: dict[str, tuple[str, ...]] = {
         "fixed_basis_100k",
         "scaling",
         "ablation_10k",
+        "resource_consequence",
         "hardware_seed_12345",
         "stability_seed_12345",
         "stability_seed_0",

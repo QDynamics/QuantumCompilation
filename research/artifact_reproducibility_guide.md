@@ -94,6 +94,7 @@ The main canonical outputs are:
 - `fixed_basis_external_baselines_100k.json` / `.md`
 - `scaling_results.json` / `.md`
 - `ablation_results_10k.json` / `.md`
+- `resource_consequence_results.json` / `.md` / `_summary.md`
 - `hardware_aware_results.json` / `.md`
 - `stability_results.json` / `.md`
 - `stability_seeded_results.json` / `.md`
