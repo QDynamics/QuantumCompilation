@@ -447,6 +447,12 @@ def build_summary(results: list) -> str:
             elif r["status"] == "timeout":
                 timeouts += 1
 
+        is_independent = len(set(semantic_sizes_outputs.values())) == 1 if semantic_sizes_outputs else False
+        if not is_independent and len(semantic_sizes_outputs) > 1:
+            lines.append(f"- ⚠️ Setup `{setup}` is NOT repetition-independent: `{semantic_sizes_outputs}`")
+        elif len(semantic_sizes_outputs) > 1:
+            lines.append(f"- ✅ Setup `{setup}` is repetition-independent (constant size `{list(semantic_sizes_outputs.values())[0]}`).")
+
         sizes = sorted(set(r["requested_target_gates"] for r in setup_results))
         for sz in sizes:
             sem_r = next((r for r in setup_results if r["requested_target_gates"] == sz and r["method"] == "semantic_ucc"), {})
