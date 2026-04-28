@@ -1,0 +1,650 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{ctex}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{amssymb} % 必须引入这个包来支持 \square
+\usepackage{booktabs} % 让表格更好看的宏包
+
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+
+\setlist[itemize]{leftmargin=2em}
+\setlist[enumerate]{leftmargin=2.2em}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\renewcommand{\arraystretch}{1.25}
+
+\title{预基结构化简项目投稿准备清单与六个月执行计划（中文版）}
+\author{YangJinsey}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{项目定位}
+
+本项目建议采用“双轨准备”策略：
+
+\begin{itemize}
+    \item \textbf{轨道 A：Quantum / ACM TQC / IEEE TQE 可投稿版本}  
+    将论文定位为一篇高质量的量子编译系统论文。核心主张不是“构建了一个普遍优于所有编译器的方法”，而是：
+    \begin{quote}
+    有界的预基结构化预处理（bounded pre-basis structural preprocessing）能够在结构化量子线路上有效防止严重退化，并在真实算法族实例上恢复强外部基线级别的输出质量。
+    \end{quote}
+
+    \item \textbf{轨道 B：PRX Quantum 升级版本}  
+    将论文从“UCC 优化分支”提升为一个更一般的量子编译原理问题，即：
+    \begin{quote}
+    basis lowering 会不可逆地破坏某些高层结构；对于特定结构化线路族，在 lowering 之前进行有界结构化简化，比 lowering 之后再做局部简化更有效。
+    \end{quote}
+\end{itemize}
+
+\section{总体判断}
+
+当前项目已经具备较强的系统论文基础，但如果目标是 PRX Quantum，还需要完成从“有效工程方案”到“更一般科学主张”的升级。
+
+\subsection{当前已经具备的基础}
+\begin{itemize}
+    \item 已有真实算法族实例；
+    \item 已有基线 UCC、优化 UCC、Qiskit opt3 等比较；
+    \item 已有一定规模的 scaling 与 ablation；
+    \item 已有较强的结构化线路结果，能够证明 pipeline placement 确实重要；
+    \item 已有初步可复现实验基础。
+\end{itemize}
+
+\subsection{当前主要短板}
+\begin{itemize}
+    \item 实验语料仍偏窄；
+    \item 部分结果可能未完全刷新到最新分支；
+    \item 真实 public benchmark 覆盖不足；
+    \item hardware-aware 证据较弱；
+    \item 论文叙事仍偏“UCC 优化”，尚未完全上升为一般编译原理；
+    \item 若以 PRX 为目标，当前 repeated wins 和理论层表达仍然不足。
+\end{itemize}
+
+\section{投稿准备清单}
+
+\subsection{一、为了稳妥投稿 Quantum / ACM TQC / IEEE TQE，必须完成的内容}
+
+\begin{enumerate}
+    \item \textbf{刷新全部核心表格与图}
+    \begin{itemize}
+        \item 在最新优化分支上重跑所有 headline tables；
+        \item 去除旧版本 timeout、旧 runtime、旧 pre-optimization 数据；
+        \item 确保论文中每一张主表、主图都来自当前代码。
+    \end{itemize}
+
+    \item \textbf{固定并明确主张}
+    \begin{itemize}
+        \item 主张必须集中在：
+        \begin{quote}
+        bounded pre-basis structural simplification 作为 anti-regression 与 quality-recovery layer 的作用
+        \end{quote}
+        \item 明确区分：
+        \begin{itemize}
+            \item 明显成功的 family；
+            \item 主要体现为防退化的 family；
+            \item 提升较弱或没有收益的 family。
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{加入至少一个公开 benchmark 来源}
+    \begin{itemize}
+        \item 推荐：MQT Bench 或 SupermarQ；
+        \item 最低要求：至少选取 2--3 个代表性实例；
+        \item 比较协议要与现有核心实验保持一致。
+    \end{itemize}
+
+    \item \textbf{加入至少一个 backend-aware / architecture-aware 实验}
+    \begin{itemize}
+        \item 固定 coupling map 或选用一个 realistic backend target；
+        \item 汇报总门数、深度、双比特门数、运行时间；
+        \item 比较 baseline UCC、optimized UCC、qiskit opt3。
+    \end{itemize}
+
+    \item \textbf{补强 ablation 与 runtime 可信度}
+    \begin{itemize}
+        \item 拆开分析：
+        \begin{itemize}
+            \item pre-basis preprocessing；
+            \item candidate selection；
+            \item short-circuiting；
+            \item commutative inverse cancellation；
+            \item bounded iteration / bounded block size。
+        \end{itemize}
+        \item 对关键 headline 实验加入重复运行与 timing variance（如条件允许）。
+    \end{itemize}
+
+    \item \textbf{形成清晰 artifact 路径}
+    \begin{itemize}
+        \item 明确脚本如何复现每个表格与图；
+        \item 保存 JSON / CSV / Markdown 中间结果；
+        \item 给出一份清楚的 artifact guide。
+    \end{itemize}
+\end{enumerate}
+
+\subsection{二、如果想认真冲击 PRX Quantum，还需要补的内容}
+
+\begin{enumerate}
+    \item \textbf{把中心结论从“改善 UCC”升级为“一般编译原理”}
+    \begin{itemize}
+        \item 从：
+        \begin{quote}
+        “这个优化分支改善了 UCC”
+        \end{quote}
+        升级为：
+        \begin{quote}
+        “对于一类结构化量子线路，pre-basis simplification 在原则上优于 post-lowering simplification”
+        \end{quote}
+        \item 形式化“structure loss after basis lowering”的概念。
+    \end{itemize}
+
+    \item \textbf{扩大编译器比较范围}
+    \begin{itemize}
+        \item 不应只停留在 UCC 与 Qiskit；
+        \item 若可行，加入 TKET；
+        \item 如条件允许，加入另一类 synthesis / compiler baseline。
+    \end{itemize}
+
+    \item \textbf{扩大公开 benchmark 语料}
+    \begin{itemize}
+        \item 不仅是当前几个 curated 真实实例；
+        \item 需要覆盖多个公开来源；
+        \item 增加更多算法族：
+        \begin{itemize}
+            \item 更多 phase estimation 变体；
+            \item amplitude estimation / amplification 类；
+            \item 不止一种 QAOA 图族；
+            \item mirrored / inverse-structured search circuits。
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{要有 repeated wins，而不仅仅是 parity}
+    \begin{itemize}
+        \item PRX 更希望看到多组真实 workload 上的明确胜出；
+        \item 例如：
+        \begin{itemize}
+            \item 更低 gate count；
+            \item 更低 depth；
+            \item 更低 2Q count；
+            \item 相同质量下更快 runtime。
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{增强理论部分}
+    \begin{itemize}
+        \item 定义哪些线路族具有 pre-lowering / post-lowering 的 optimizability gap；
+        \item 给出 recoverable vs irrecoverable structure loss 的条件；
+        \item 补上 bounded preprocessing 的复杂度分析；
+        \item 最好给出至少若干命题、定义或充分条件。
+    \end{itemize}
+
+    \item \textbf{把经验结果绑定到更一般的科学结论}
+    \begin{itemize}
+        \item 结论不能只是：
+        \begin{quote}
+        “这个 branch 很有效”
+        \end{quote}
+        \item 而应提升为：
+        \begin{quote}
+        “compiler pass placement 本身就是结构化量子线路优化中的关键变量”
+        \end{quote}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{三、暂时不值得继续花太多时间的内容}
+
+\begin{enumerate}
+    \item 继续精修已经完全解决的 toy QFT + inverse-QFT；
+    \item 大量新增仅重复已有结论的 synthetic stress tests；
+    \item 在主张还未稳定前，盲目追逐微小常数级性能提升；
+    \item 在实验缺口和理论框架未补齐前，花太多时间打磨辞藻；
+    \item 提前过度做代码洁癖式重构。
+\end{enumerate}
+
+\section{任务看板（Kanban）}
+
+\subsection{总看板}
+
+\begin{longtable}{p{0.18\textwidth} p{0.22\textwidth} p{0.22\textwidth} p{0.22\textwidth}}
+\toprule
+\textbf{任务类别} & \textbf{必须做（近期）} & \textbf{高价值可选（中期）} & \textbf{暂不投入（低优先级）} \\
+\midrule
+\endhead
+
+实验刷新 &
+\begin{itemize}
+    \item 重跑全部主表
+    \item 统一最新分支结果
+    \item 清理旧 timeout / 旧 runtime
+\end{itemize}
+&
+\begin{itemize}
+    \item 加 repeated timing
+    \item 加 variance bars
+\end{itemize}
+&
+\begin{itemize}
+    \item 继续扩旧 toy case
+\end{itemize}
+\\
+
+benchmark 扩展 &
+\begin{itemize}
+    \item 加 1 个公开 benchmark 来源
+    \item 补 2--3 个新实例
+\end{itemize}
+&
+\begin{itemize}
+    \item 再加第 2 个 benchmark suite
+    \item 扩展更多算法族
+\end{itemize}
+&
+\begin{itemize}
+    \item 机械堆很多相似实例
+\end{itemize}
+\\
+
+硬件相关性 &
+\begin{itemize}
+    \item 加 1 组 backend-aware 实验
+\end{itemize}
+&
+\begin{itemize}
+    \item 多 backend 对比
+    \item 多 coupling map 对比
+\end{itemize}
+&
+\begin{itemize}
+    \item 在没有主结果前做大规模硬件 sweep
+\end{itemize}
+\\
+
+比较基线 &
+\begin{itemize}
+    \item baseline UCC
+    \item optimized UCC
+    \item qiskit opt3
+\end{itemize}
+&
+\begin{itemize}
+    \item TKET
+    \item 其他 synthesis baseline
+\end{itemize}
+&
+\begin{itemize}
+    \item 很难公平比较的零散 baseline
+\end{itemize}
+\\
+
+理论提升 &
+\begin{itemize}
+    \item 写清问题定义
+    \item 写清 placement matters
+    \item 写 complexity discussion
+\end{itemize}
+&
+\begin{itemize}
+    \item 定义 optimizability gap
+    \item 给出 family classification
+    \item 提出 recoverable / irrecoverable 条件
+\end{itemize}
+&
+\begin{itemize}
+    \item 勉强追求大而空的形式化
+\end{itemize}
+\\
+
+写作叙事 &
+\begin{itemize}
+    \item 固定主 claim
+    \item 写 failure cases
+    \item 写 reproducibility 路径
+\end{itemize}
+&
+\begin{itemize}
+    \item 改写为 PRX 风格 general principle
+\end{itemize}
+&
+\begin{itemize}
+    \item 在实验未齐前反复打磨措辞
+\end{itemize}
+\\
+
+工程优化 &
+\begin{itemize}
+    \item 优先修最影响 headline 的 runtime bottleneck
+\end{itemize}
+&
+\begin{itemize}
+    \item 做选择性性能优化
+\end{itemize}
+&
+\begin{itemize}
+    \item 全面重构代码
+    \item 追小常数优化
+\end{itemize}
+\\
+
+\bottomrule
+\end{longtable}
+
+\subsection{执行状态看板模板}
+
+下面给出一个可以在每周或每两周更新一次的执行看板模板。
+
+\begin{longtable}{p{0.22\textwidth} p{0.18\textwidth} p{0.18\textwidth} p{0.18\textwidth} p{0.14\textwidth}}
+\toprule
+\textbf{任务} & \textbf{待开始} & \textbf{进行中} & \textbf{已完成} & \textbf{备注} \\
+\midrule
+\endhead
+
+刷新主表（real instances） & $\square$ & $\square$ & $\square$ &  \\
+刷新 scaling 表 & $\square$ & $\square$ & $\square$ &  \\
+刷新 ablation 表 & $\square$ & $\square$ & $\square$ &  \\
+加入公开 benchmark 来源 & $\square$ & $\square$ & $\square$ &  \\
+加入 backend-aware 实验 & $\square$ & $\square$ & $\square$ &  \\
+补 repeated timing & $\square$ & $\square$ & $\square$ &  \\
+写 Quantum 版本引言 & $\square$ & $\square$ & $\square$ &  \\
+写 failure cases 小节 & $\square$ & $\square$ & $\square$ &  \\
+写 artifact guide & $\square$ & $\square$ & $\square$ &  \\
+形成 optimizability gap 表述 & $\square$ & $\square$ & $\square$ &  \\
+加入额外编译器 baseline & $\square$ & $\square$ & $\square$ &  \\
+写理论部分初稿 & $\square$ & $\square$ & $\square$ &  \\
+整合 PRX 风格摘要 & $\square$ & $\square$ & $\square$ &  \\
+投稿版本定稿 & $\square$ & $\square$ & $\square$ &  \\
+
+\bottomrule
+\end{longtable}
+
+\section{六个月详细日程安排（按两周粒度）}
+
+目标设计如下：
+
+\begin{itemize}
+    \item \textbf{第 3 个月末：} 达到强 Quantum / ACM TQC / IEEE TQE 投稿准备水平；
+    \item \textbf{第 6 个月末：} 决定是直接投稿上述期刊，还是在证据足够强时继续冲击 PRX Quantum。
+\end{itemize}
+
+\begin{longtable}{p{0.10\textwidth} p{0.18\textwidth} p{0.34\textwidth} p{0.26\textwidth}}
+\toprule
+\textbf{周数} & \textbf{阶段主题} & \textbf{主要任务} & \textbf{阶段产出} \\
+\midrule
+\endhead
+
+第1--2周 &
+实验审计与冻结 &
+\begin{itemize}
+    \item 盘点所有已有结果文件；
+    \item 标记旧表、旧 runtime、旧 timeout；
+    \item 冻结当前优化分支；
+    \item 确定统一 baseline protocol。
+\end{itemize}
+&
+\begin{itemize}
+    \item 实验资产清单；
+    \item 待重跑表格列表；
+    \item 固定实验配置。
+\end{itemize}
+\\
+
+第3--4周 &
+核心表格刷新 &
+\begin{itemize}
+    \item 重跑真实实例主表；
+    \item 重跑 scaling；
+    \item 重跑 ablation；
+    \item 验证是否可复现。
+\end{itemize}
+&
+\begin{itemize}
+    \item 最新版主结果表；
+    \item 最新图表输出；
+    \item 干净结果目录。
+\end{itemize}
+\\
+
+第5--6周 &
+公开 benchmark 扩展 I &
+\begin{itemize}
+    \item 接入 1 个公开 benchmark 来源；
+    \item 选取 2--3 个代表实例；
+    \item 运行 baseline UCC / optimized UCC / qiskit opt3；
+    \item 记录结果并分析是否支持主 claim。
+\end{itemize}
+&
+\begin{itemize}
+    \item 一组新增 benchmark 表；
+    \item 新 benchmark 的数据文件。
+\end{itemize}
+\\
+
+第7--8周 &
+硬件相关实验 &
+\begin{itemize}
+    \item 选择 1 个 coupling map 或 backend target；
+    \item 设定公平 routing / compilation protocol；
+    \item 运行 backend-aware 对比；
+    \item 记录 depth 与 2Q 指标。
+\end{itemize}
+&
+\begin{itemize}
+    \item backend-aware 结果表；
+    \item 对应讨论小节草稿。
+\end{itemize}
+\\
+
+第9--10周 &
+ablation 与时间可信度强化 &
+\begin{itemize}
+    \item 更清晰拆分方法组件；
+    \item 对核心实验加 repeated timing；
+    \item 总结 no-gain / weak-gain 案例；
+    \item 标记最关键 runtime bottleneck。
+\end{itemize}
+&
+\begin{itemize} 
+    \item 更强 ablation 小节；
+    \item timing variance 表；
+    \item bottleneck 备忘录。
+\end{itemize}
+\\
+
+第11--12周 &
+Quantum 版本初稿 &
+\begin{itemize}
+    \item 写摘要、引言、相关工作；
+    \item 写方法部分；
+    \item 写实验设置与主结果；
+    \item 写 limitations 与 failure cases。
+\end{itemize}
+&
+\begin{itemize}
+    \item 一份完整的 Quantum 风格初稿。
+\end{itemize}
+\\
+
+第13--14周 &
+叙事升级 &
+\begin{itemize}
+    \item 将引言改写为 structure loss 问题；
+    \item 强调 placement 是核心变量；
+    \item 重新梳理：
+    \begin{itemize}
+        \item anti-regression；
+        \item quality recovery；
+        \item genuine win。
+    \end{itemize}
+\end{itemize}
+&
+\begin{itemize}
+    \item 更强的引言版本；
+    \item 主张升级 memo。
+\end{itemize}
+\\
+
+第15--16周 &
+理论框架 I &
+\begin{itemize}
+    \item 形式化线路族分类：
+    \begin{itemize}
+        \item exact inverse；
+        \item repeated exact；
+        \item mirrored；
+        \item commuting inverse chains。
+    \end{itemize}
+    \item 写 complexity discussion；
+    \item 写 recoverable / irrecoverable structure loss 表述。
+\end{itemize}
+&
+\begin{itemize}
+    \item 理论部分草稿；
+    \item 若干定义 / 命题雏形。
+\end{itemize}
+\\
+
+第17--18周 &
+PRX 升级尝试 I &
+\begin{itemize}
+    \item 新增 1 个真实算法族；
+    \item 若可行，加入 1 个额外编译器 baseline；
+    \item 判断是否出现 repeated wins。
+\end{itemize}
+&
+\begin{itemize}
+    \item 扩展比较表；
+    \item PRX 可行性中期判断。
+\end{itemize}
+\\
+
+第19--20周 &
+选择性性能优化 &
+\begin{itemize}
+    \item 只优化最影响 headline 的 runtime 问题；
+    \item 提升 bounded scanning / block selection / caching；
+    \item 重跑最受影响实验。
+\end{itemize}
+&
+\begin{itemize}
+    \item 一版优化后的实现；
+    \item 优化前后 timing 对比。
+\end{itemize}
+\\
+
+第21--22周 &
+投稿版整合 &
+\begin{itemize}
+    \item 整合全部最新实验；
+    \item 固定图表与 caption；
+    \item 完成 artifact appendix；
+    \item 根据当前证据决定目标期刊。
+\end{itemize}
+&
+\begin{itemize}
+    \item near-submission manuscript；
+    \item 完整 artifact guide。
+\end{itemize}
+\\
+
+第23--24周 &
+外部反馈与最终定稿 &
+\begin{itemize}
+    \item 给可信读者 / 导师 / 背书人征求反馈；
+    \item 压缩过度表述；
+    \item 最终整理仓库、附录、致谢与投稿材料。
+\end{itemize}
+&
+\begin{itemize}
+    \item 最终投稿包；
+    \item arXiv-ready 版本；
+    \item 目标期刊最终决定。
+\end{itemize}
+\\
+
+\bottomrule
+\end{longtable}
+
+\section{每月里程碑}
+
+\subsection*{第1个月结束}
+\begin{itemize}
+    \item 所有旧实验和旧表格被识别；
+    \item 核心结果刷新完成；
+    \item 实验脚本路径稳定。
+\end{itemize}
+
+\subsection*{第2个月结束}
+\begin{itemize}
+    \item 至少加入 1 个公开 benchmark 来源；
+    \item 至少完成 1 组 backend-aware 实验；
+    \item Quantum 级别的实验故事基本成型。
+\end{itemize}
+
+\subsection*{第3个月结束}
+\begin{itemize}
+    \item Quantum / ACM TQC / IEEE TQE 风格完整初稿完成；
+    \item artifact 复现路径清晰；
+    \item 已具备实际投稿可能。
+\end{itemize}
+
+\subsection*{第4个月结束}
+\begin{itemize}
+    \item 论文框架已从“UCC 优化”升级到“structure loss 与 pass placement”；
+    \item 理论部分形成初稿。
+\end{itemize}
+
+\subsection*{第5个月结束}
+\begin{itemize}
+    \item 若可行，完成额外 baseline 或额外算法族扩展；
+    \item 关键 bottleneck 得到选择性优化；
+    \item 再次诚实评估 PRX 可行性。
+\end{itemize}
+
+\subsection*{第6个月结束}
+\begin{itemize}
+    \item 若 generality、理论、repeated wins 仍不足，则投稿 Quantum / ACM TQC / IEEE TQE；
+    \item 若 general principle、broad evidence、hardware relevance 和理论表达都明显增强，则认真考虑 PRX Quantum。
+\end{itemize}
+
+\section{最终决策规则}
+
+六个月结束后，用以下标准决定投稿方向：
+
+\begin{itemize}
+    \item \textbf{投稿 Quantum / ACM TQC / IEEE TQE}，如果论文已经具备：
+    \begin{itemize}
+        \item 刷新的可信实验；
+        \item 至少一个公开 benchmark 扩展；
+        \item 至少一个 backend-aware 实验；
+        \item 清晰可复现的 artifact；
+        \item 以 anti-regression / quality recovery 为核心的系统论文叙事；
+        \item 但主要还是 parity 或防退化，而非 repeated wins。
+    \end{itemize}
+
+    \item \textbf{考虑投稿 PRX Quantum}，仅当论文已经具备：
+    \begin{itemize}
+        \item 超出 UCC 的一般性编译原理；
+        \item 更广的公开 benchmark 证据；
+        \item 在真实 workload 上多次明确胜出；
+        \item 明确的硬件相关性；
+        \item 实质性的理论部分。
+    \end{itemize}
+\end{itemize}
+
+\end{document}
