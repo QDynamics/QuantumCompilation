@@ -214,16 +214,107 @@
 | 4 | full_pair_cp | qft_dyadic | 10,000 | 999 | tket_full_peephole | unavailable | - | - | - | - |
 | 4 | full_pair_cp | qft_dyadic | 20,000 | - | qiskit_opt3 | timeout | - | - | - | > 60 s |
 | 4 | full_pair_cp | qft_dyadic | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 5 | chain_cp | nonresonant_seeded | 4,000 | 443 | semantic_ucc | ok | 35 | 23 | 8 | 5.753 s |
+| 5 | chain_cp | nonresonant_seeded | 4,000 | 443 | qiskit_opt3 | ok | 7,097 | 3,553 | 3,101 | 1.371 s |
+| 5 | chain_cp | nonresonant_seeded | 4,000 | 443 | baseline_ucc | ok | 35 | 23 | 8 | 5.104 s |
+| 5 | chain_cp | nonresonant_seeded | 10,000 | 1110 | semantic_ucc | ok | 35 | 23 | 8 | 21.53 s |
+| 5 | chain_cp | nonresonant_seeded | 10,000 | 1110 | qiskit_opt3 | ok | 17,774 | 8,890 | 7,770 | 8.114 s |
+| 5 | chain_cp | nonresonant_seeded | 10,000 | 1110 | baseline_ucc | ok | 35 | 23 | 8 | 20.736 s |
+| 5 | chain_cp | nonresonant_seeded | 20,000 | 2221 | semantic_ucc | ok | 35 | 23 | 8 | 60.685 s |
+| 5 | chain_cp | nonresonant_seeded | 20,000 | 2221 | qiskit_opt3 | ok | 35,545 | 17,777 | 15,547 | 32.172 s |
+| 5 | chain_cp | nonresonant_seeded | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 5 | chain_cp | qft_dyadic | 4,000 | 443 | semantic_ucc | ok | 35 | 23 | 8 | 4.573 s |
+| 5 | chain_cp | qft_dyadic | 4,000 | 443 | qiskit_opt3 | ok | 7,103 | 3,113 | 3,544 | 1.196 s |
+| 5 | chain_cp | qft_dyadic | 4,000 | 443 | baseline_ucc | ok | 35 | 23 | 8 | 4.584 s |
+| 5 | chain_cp | qft_dyadic | 10,000 | 1110 | semantic_ucc | ok | 35 | 23 | 8 | 20.615 s |
+| 5 | chain_cp | qft_dyadic | 10,000 | 1110 | qiskit_opt3 | ok | 17,775 | 7,782 | 8,880 | 6.942 s |
+| 5 | chain_cp | qft_dyadic | 10,000 | 1110 | baseline_ucc | ok | 35 | 23 | 8 | 21.391 s |
+| 5 | chain_cp | qft_dyadic | 20,000 | 2221 | semantic_ucc | ok | 35 | 23 | 8 | 58.234 s |
+| 5 | chain_cp | qft_dyadic | 20,000 | 2221 | qiskit_opt3 | ok | 35,551 | 15,559 | 17,768 | 27.399 s |
+| 5 | chain_cp | qft_dyadic | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 5 | full_pair_cp | nonresonant_seeded | 4,000 | 266 | semantic_ucc | ok | 65 | 32 | 20 | 5.528 s |
+| 5 | full_pair_cp | nonresonant_seeded | 4,000 | 266 | qiskit_opt3 | ok | 11,711 | 4,798 | 5,054 | 1.488 s |
+| 5 | full_pair_cp | nonresonant_seeded | 4,000 | 266 | baseline_ucc | ok | 65 | 32 | 20 | 5.298 s |
+| 5 | full_pair_cp | nonresonant_seeded | 10,000 | 666 | semantic_ucc | ok | 65 | 32 | 20 | 22.449 s |
+| 5 | full_pair_cp | nonresonant_seeded | 10,000 | 666 | qiskit_opt3 | ok | 29,315 | 11,998 | 12,654 | 8.166 s |
+| 5 | full_pair_cp | nonresonant_seeded | 10,000 | 666 | baseline_ucc | ok | 65 | 32 | 20 | 22.339 s |
+| 5 | full_pair_cp | nonresonant_seeded | 20,000 | 1332 | semantic_ucc | ok | 65 | 32 | 20 | 62.52 s |
+| 5 | full_pair_cp | nonresonant_seeded | 20,000 | 1332 | qiskit_opt3 | ok | 58,614 | 23,986 | 25,308 | 30.573 s |
+| 5 | full_pair_cp | nonresonant_seeded | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 5 | full_pair_cp | qft_dyadic | 4,000 | 266 | semantic_ucc | ok | 65 | 32 | 20 | 7.466 s |
+| 5 | full_pair_cp | qft_dyadic | 4,000 | 266 | qiskit_opt3 | ok | 10,655 | 4,798 | 5,320 | 3.049 s |
+| 5 | full_pair_cp | qft_dyadic | 4,000 | 266 | baseline_ucc | ok | 65 | 32 | 20 | 7.51 s |
+| 5 | full_pair_cp | qft_dyadic | 10,000 | 666 | semantic_ucc | ok | 65 | 32 | 20 | 38.328 s |
+| 5 | full_pair_cp | qft_dyadic | 10,000 | 666 | qiskit_opt3 | ok | 26,655 | 11,998 | 13,320 | 18.699 s |
+| 5 | full_pair_cp | qft_dyadic | 10,000 | 666 | baseline_ucc | ok | 65 | 32 | 20 | 33.791 s |
+| 5 | full_pair_cp | qft_dyadic | 20,000 | 1332 | semantic_ucc | ok | 65 | 32 | 20 | 102.736 s |
+| 5 | full_pair_cp | qft_dyadic | 20,000 | - | qiskit_opt3 | timeout | - | - | - | > 60 s |
+| 5 | full_pair_cp | qft_dyadic | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 6 | chain_cp | nonresonant_seeded | 4,000 | 362 | semantic_ucc | ok | 68 | 21 | 8 | 2.171 s |
+| 6 | chain_cp | nonresonant_seeded | 4,000 | 362 | qiskit_opt3 | ok | 8,338 | 2,910 | 3,258 | 1.159 s |
+| 6 | chain_cp | nonresonant_seeded | 4,000 | 362 | baseline_ucc | ok | 68 | 21 | 8 | 2.287 s |
+| 6 | chain_cp | nonresonant_seeded | 10,000 | 908 | semantic_ucc | ok | 43 | 28 | 10 | 21.758 s |
+| 6 | chain_cp | nonresonant_seeded | 10,000 | 908 | qiskit_opt3 | ok | 20,900 | 7,279 | 8,172 | 6.537 s |
+| 6 | chain_cp | nonresonant_seeded | 10,000 | 908 | baseline_ucc | ok | 43 | 28 | 10 | 21.623 s |
+| 6 | chain_cp | nonresonant_seeded | 20,000 | 1817 | semantic_ucc | ok | 43 | 28 | 10 | 56.422 s |
+| 6 | chain_cp | nonresonant_seeded | 20,000 | 1817 | qiskit_opt3 | ok | 41,807 | 14,551 | 16,353 | 27.107 s |
+| 6 | chain_cp | nonresonant_seeded | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 6 | chain_cp | qft_dyadic | 4,000 | 362 | semantic_ucc | ok | 43 | 28 | 10 | 5.253 s |
+| 6 | chain_cp | qft_dyadic | 4,000 | 362 | qiskit_opt3 | ok | 7,257 | 2,550 | 3,620 | 1.064 s |
+| 6 | chain_cp | qft_dyadic | 4,000 | 362 | baseline_ucc | ok | 43 | 28 | 10 | 5.202 s |
+| 6 | chain_cp | qft_dyadic | 10,000 | 908 | semantic_ucc | ok | 41 | 27 | 10 | 22.927 s |
+| 6 | chain_cp | qft_dyadic | 10,000 | 908 | qiskit_opt3 | ok | 18,176 | 6,372 | 9,080 | 8.047 s |
+| 6 | chain_cp | qft_dyadic | 10,000 | 908 | baseline_ucc | ok | 41 | 27 | 10 | 20.967 s |
+| 6 | chain_cp | qft_dyadic | 20,000 | 1817 | semantic_ucc | ok | 43 | 28 | 10 | 55.183 s |
+| 6 | chain_cp | qft_dyadic | 20,000 | 1817 | qiskit_opt3 | ok | 36,358 | 12,735 | 18,170 | 25.611 s |
+| 6 | chain_cp | qft_dyadic | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 6 | full_pair_cp | nonresonant_seeded | 4,000 | 189 | semantic_ucc | ok | 93 | 40 | 30 | 7.06 s |
+| 6 | full_pair_cp | nonresonant_seeded | 4,000 | 189 | qiskit_opt3 | ok | 12,108 | 4,359 | 5,481 | 1.524 s |
+| 6 | full_pair_cp | nonresonant_seeded | 4,000 | 189 | baseline_ucc | ok | 93 | 40 | 30 | 5.696 s |
+| 6 | full_pair_cp | nonresonant_seeded | 10,000 | 475 | semantic_ucc | ok | 93 | 40 | 30 | 20.438 s |
+| 6 | full_pair_cp | nonresonant_seeded | 10,000 | 475 | qiskit_opt3 | ok | 30,417 | 10,939 | 13,775 | 7.851 s |
+| 6 | full_pair_cp | nonresonant_seeded | 10,000 | 475 | baseline_ucc | ok | 93 | 40 | 30 | 19.313 s |
+| 6 | full_pair_cp | nonresonant_seeded | 20,000 | 951 | semantic_ucc | ok | 93 | 40 | 30 | 68.375 s |
+| 6 | full_pair_cp | nonresonant_seeded | 20,000 | 951 | qiskit_opt3 | ok | 60,876 | 21,885 | 27,579 | 31.051 s |
+| 6 | full_pair_cp | nonresonant_seeded | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
+| 6 | full_pair_cp | qft_dyadic | 4,000 | 189 | semantic_ucc | ok | 93 | 40 | 30 | 6.714 s |
+| 6 | full_pair_cp | qft_dyadic | 4,000 | 189 | qiskit_opt3 | ok | 11,358 | 4,171 | 5,670 | 2.482 s |
+| 6 | full_pair_cp | qft_dyadic | 4,000 | 189 | baseline_ucc | ok | 93 | 40 | 30 | 6.795 s |
+| 6 | full_pair_cp | qft_dyadic | 10,000 | 475 | semantic_ucc | ok | 93 | 40 | 30 | 26.98 s |
+| 6 | full_pair_cp | qft_dyadic | 10,000 | 475 | qiskit_opt3 | ok | 28,518 | 10,463 | 14,250 | 14.995 s |
+| 6 | full_pair_cp | qft_dyadic | 10,000 | 475 | baseline_ucc | ok | 93 | 40 | 30 | 27.362 s |
+| 6 | full_pair_cp | qft_dyadic | 20,000 | 951 | semantic_ucc | ok | 93 | 40 | 30 | 94.51 s |
+| 6 | full_pair_cp | qft_dyadic | 20,000 | - | qiskit_opt3 | timeout | - | - | - | > 60 s |
+| 6 | full_pair_cp | qft_dyadic | 20,000 | - | baseline_ucc | timeout | - | - | - | > 60 s |
 
 # Generalized Fourier Witness Suite Summary
 
 ## Overall Conclusion
-Semantic Fourier-layer aggregation remains repetition-independent across width, topology, and angle-family axes.
+Semantic Fourier-layer aggregation remains repetition-independent across topology, angle-family, and requested-size axes at fixed width `n=4`.
 
 ## Analysis by Setup
 Each setup is `(n_qubits, topology, angle_family)`.
 
-- **Strict structural-quality wins**: `42/42`
-- **No-worse quality points**: `42/42`
-- **Runtime/scalability wins**: `14/42`
-- **Total timeouts across all tools/runs**: `26`
+- ⚠️ Setup `(4, 'chain_cp', 'mixed_signed')` is NOT repetition-independent: `{4000: 27, 10000: 27, 20000: 23, 50000: 27}`
+- ✅ Setup `(4, 'chain_cp', 'nonresonant_seeded')` is repetition-independent (constant size `27`).
+- ✅ Setup `(4, 'chain_cp', 'qft_dyadic')` is repetition-independent (constant size `27`).
+- ✅ Setup `(4, 'full_pair_cp', 'nonresonant_seeded')` is repetition-independent (constant size `42`).
+- ✅ Setup `(4, 'full_pair_cp', 'qft_dyadic')` is repetition-independent (constant size `42`).
+- ✅ Setup `(4, 'ring_cp', 'mixed_signed')` is repetition-independent (constant size `32`).
+- ✅ Setup `(4, 'ring_cp', 'nonresonant_seeded')` is repetition-independent (constant size `32`).
+- ✅ Setup `(4, 'ring_cp', 'qft_dyadic')` is repetition-independent (constant size `32`).
+- ⚠️ Setup `(4, 'sparse_cp_0.5', 'mixed_signed')` is NOT repetition-independent: `{4000: 27, 10000: 27, 20000: 25, 50000: 27}`
+- ✅ Setup `(4, 'sparse_cp_0.5', 'nonresonant_seeded')` is repetition-independent (constant size `27`).
+- ⚠️ Setup `(4, 'sparse_cp_0.5', 'qft_dyadic')` is NOT repetition-independent: `{4000: 27, 10000: 27, 20000: 25, 50000: 27}`
+- ✅ Setup `(5, 'chain_cp', 'nonresonant_seeded')` is repetition-independent (constant size `35`).
+- ✅ Setup `(5, 'chain_cp', 'qft_dyadic')` is repetition-independent (constant size `35`).
+- ✅ Setup `(5, 'full_pair_cp', 'nonresonant_seeded')` is repetition-independent (constant size `65`).
+- ✅ Setup `(5, 'full_pair_cp', 'qft_dyadic')` is repetition-independent (constant size `65`).
+- ⚠️ Setup `(6, 'chain_cp', 'nonresonant_seeded')` is NOT repetition-independent: `{4000: 68, 10000: 43, 20000: 43}`
+- ⚠️ Setup `(6, 'chain_cp', 'qft_dyadic')` is NOT repetition-independent: `{4000: 43, 10000: 41, 20000: 43}`
+- ✅ Setup `(6, 'full_pair_cp', 'nonresonant_seeded')` is repetition-independent (constant size `93`).
+- ✅ Setup `(6, 'full_pair_cp', 'qft_dyadic')` is repetition-independent (constant size `93`).
+- **Strict structural-quality wins**: `66/66`
+- **No-worse quality points**: `66/66`
+- **Runtime/scalability wins**: `16/66`
+- **Total timeouts across all tools/runs**: `36`

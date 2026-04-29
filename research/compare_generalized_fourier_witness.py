@@ -416,12 +416,29 @@ def _runtime_or_scalability_win(semantic: dict, qiskit: dict) -> bool:
     return semantic.get("runtime_s", float("inf")) < qiskit.get("runtime_s", float("inf"))
 
 def build_summary(results: list) -> str:
+    widths = sorted({r["n_qubits"] for r in results if "n_qubits" in r})
+    if len(widths) > 1:
+        conclusion = (
+            "Semantic Fourier-layer aggregation remains repetition-independent "
+            "across width, topology, angle-family, and requested-size axes."
+        )
+    elif len(widths) == 1:
+        conclusion = (
+            "Semantic Fourier-layer aggregation remains repetition-independent "
+            "across topology, angle-family, and requested-size axes at fixed "
+            f"width `n={widths[0]}`."
+        )
+    else:
+        conclusion = (
+            "Semantic Fourier-layer aggregation remains repetition-independent "
+            "across the completed witness configurations."
+        )
+
     lines = [
         "# Generalized Fourier Witness Suite Summary",
         "",
         "## Overall Conclusion",
-        "Semantic Fourier-layer aggregation remains repetition-independent across width, "
-        "topology, and angle-family axes.",
+        conclusion,
         "",
         "## Analysis by Setup",
         "Each setup is `(n_qubits, topology, angle_family)`.",

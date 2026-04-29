@@ -1325,7 +1325,7 @@ def _compile_semantic_term_to_circuit(template_circuit, term, compiler):
                 return None
             compiled_parts.append(compiled_part)
         compiled_term = _empty_compose_container(
-            compiled_parts[0], template_circuit.global_phase
+            template_circuit, template_circuit.global_phase
         )
         for compiled_part in compiled_parts:
             compiled_term.compose(compiled_part, inplace=True)
