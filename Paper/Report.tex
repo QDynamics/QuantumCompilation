@@ -512,7 +512,8 @@
 
   \vspace{0.4em}
   \begin{itemize}
-    \item 固定 $n=4$，不声称已经完成 width sweep
+    \item 主 suite 固定 $n=4$，用于测试 topology / angle / scale 轴
+    \item 新增 full-pair width-axis stress 覆盖 $n=5,6$
     \item topology: chain / ring / sparse-0.5 / full-pair CP
     \item angle family: nonresonant seeded / QFT-dyadic / mixed-signed
     \item sizes: 4k / 10k / 20k / 50k
@@ -553,6 +554,32 @@
 
   \vspace{0.4em}
   full-pair CP 是 42-gate canonical case；chain/ring/sparse 给出同一原理的拓扑鲁棒性。
+\end{frame}
+
+\begin{frame}{width-axis external stress}
+  \scriptsize
+  \begin{tabular}{lrrrr}
+    \toprule
+    Case & semantic & \texttt{qiskit} & PyZX & TKET \\
+    \midrule
+    $n=5$, 4k & 65 & 11{,}711 & 14{,}640 & 30{,}369 \\
+    $n=5$, 10k & 65 & 29{,}315 & 36{,}640 & timeout \\
+    $n=6$, 4k & 93 & 12{,}108 & 15{,}321 & 33{,}881 \\
+    $n=6$, 10k & 93 & 30{,}417 & 38{,}487 & timeout \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.8em}
+  \small
+  解释：
+  \begin{itemize}
+    \item semantic output 随 diagonal term count 增长：$42 \to 65 \to 93$
+    \item Qiskit 和 PyZX 在 configured bridge pipeline 中仍保持万级输出
+    \item TKET 在 4k 完成但输出更大，在 10k timeout
+  \end{itemize}
+
+  \vspace{0.4em}
+  这是一组 pipeline-specific diagnostic，用于定位 representation boundary。
 \end{frame}
 
 \begin{frame}{figure: Fourier-layer separation}
@@ -782,6 +809,8 @@
     \item basis lowering can destroy bounded local recoverability
     \item fixed-width Fourier-layer family gives $\Omega(r)$ vs $O(1)$ separation
     \item generalized fixed-width suite gives $42/42$ structural wins across topology and angle axes
+    \item width-axis stress gives $65$ and $93$ gate bounded semantic outputs at $n=5,6$
+    \item representative PyZX/TKET stress tests do not recover the bounded semantic form in the configured bridge pipelines
     \item semantic-first aggregation keeps resource proxy constant
     \item UCC artifact demonstrates the principle operationally
   \end{itemize}
@@ -801,7 +830,7 @@
 
   \begin{enumerate}
     \item theorem 给出 representation-dependent separation
-    \item canonical 和 generalized fixed-width Fourier experiments 实现 $\Omega(r)$ vs $O(1)$ 签名
+    \item canonical、generalized 和 width-axis Fourier experiments 实现 $\Omega(r)$ vs $O(1)$ 签名
     \item ablation 和 resource experiment 说明机制来自 semantic Fourier lifting
     \item real / public benchmarks 定义 scope：semantic lifting 修复 regression，但作用是选择性的
   \end{enumerate}
@@ -843,7 +872,8 @@
 
   \vspace{0.5em}
   canonical full-pair case emits 42 gates；generalized suite gives 42/42
-  strict structural wins over \texttt{qiskit opt3} at $n=4$.
+  strict structural wins over \texttt{qiskit opt3} at $n=4$；width-axis stress
+  gives 65 and 93 gate bounded semantic outputs at $n=5,6$.
 \end{frame}
 
 \end{document}

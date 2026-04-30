@@ -42,6 +42,9 @@ docs = [
     "sphinxcontrib-bibtex>=2.6.3",
 ]
 
+[project.scripts]
+# No CLI entrypoint currently implemented.
+
 [tool.ruff]
 line-length = 79
 

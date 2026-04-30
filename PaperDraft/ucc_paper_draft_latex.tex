@@ -73,12 +73,14 @@ $12$ \texttt{cx} gates, while \texttt{qiskit opt3} grows to $9{,}588$,
 $23{,}988$, and $47{,}988$ gates at the first three sizes and times out at
 $50$k and $100$k. A generalized fixed-width suite varies the diagonal topology
 and angle family at $n=4$ and gives $42/42$ strict structural-quality wins over
-\texttt{qiskit opt3}; semantic UCC completes every comparable point, while
-\texttt{qiskit opt3} times out on $14$ of them. A Fourier-layer ablation removes
-this completed constant-output recovery, and a resource-consequence experiment
-shows that, under a rotation-count Clifford+$T$ proxy at precision $10^{-10}$,
-semantic-first compilation keeps a constant $T$-proxy of $2{,}200$, whereas
-materialize-first \texttt{qiskit opt3} grows from $479{,}300$ to
+\texttt{qiskit opt3}; a full-pair width-axis sweep gives the predicted
+$42\!\to\!65\!\to\!93$ gate scaling for $n=4,5,6$. Representative PyZX and
+TKET stress tests on the $n=5,6$ width-axis cases do not recover the bounded
+semantic form in the configured bridge pipelines. A Fourier-layer ablation
+removes this completed constant-output recovery, and a resource-consequence
+experiment shows that, under a rotation-count Clifford+$T$ proxy at precision
+$10^{-10}$, semantic-first compilation keeps a constant $T$-proxy of $2{,}200$,
+whereas materialize-first \texttt{qiskit opt3} grows from $479{,}300$ to
 $2{,}399{,}300$ before timing out.
 \end{abstract}
 
@@ -723,16 +725,18 @@ First, it matches the failure mode observed in UCCDefaults and Qiskit preset
 optimization on $H D^r H$: the pipeline improves local basis structure but does
 not reconstruct the global commuting diagonal layer whose coefficients should
 be aggregated across $r$ copies. Second, the TKET FullPeephole baseline probes
-a strong but still local/peephole-oriented optimization regime; on the
-Fourier-layer family it times out before recovering the constant semantic
-form. Third, PyZX is included precisely as a stress test for this boundary.
+a strong but still local/peephole-oriented optimization regime; in the
+canonical run it times out before recovering the constant semantic form, and
+in the width-axis stress test it either emits much larger circuits or times
+out. Third, PyZX is included precisely as a stress test for this boundary.
 PyZX has algebraic rewriting power in principle, so the result should not be
 read as a theorem that PyZX cannot solve the family. The correct interpretation
 is narrower: in the tested QASM/Qiskit-to-PyZX-to-Qiskit pipeline and fixed
 target-basis protocol, PyZX did not recover the global diagonal
-phase-polynomial aggregation. This makes the experiment evidence that the
-recoverability gap is a pipeline/representation phenomenon, not merely a UCC
-implementation accident.
+phase-polynomial aggregation on either the canonical witness or the
+representative $n=5,6$ width-axis stress cases. This makes the experiment
+evidence that the recoverability gap is a pipeline/representation phenomenon,
+not merely a UCC implementation accident.
 
 The restricted-class theorem and the multi-compiler experiment therefore play
 different roles. The theorem explains why bounded local post-lowering
@@ -1269,9 +1273,10 @@ The tables and figures are organized around this evidence chain rather than
 around a ranking of software packages. The visual spine of the results is:
 \cref{fig:fourier-separation} for the primary fixed-width separation,
 \cref{tab:generalized-fourier-witness} for the generalized fixed-width
-topology/angle sweep, \cref{fig:fourier-ablation} for the causal mechanism
-check, and \cref{fig:resource-consequence} for the resource-estimation
-consequence.
+topology/angle sweep, \cref{tab:width-axis-scaling} for the $O(m)$ width-axis
+check, \cref{tab:width-axis-external-stress} for representative external
+stress tests, \cref{fig:fourier-ablation} for the causal mechanism check, and
+\cref{fig:resource-consequence} for the resource-estimation consequence.
 The Fourier ablation closes the mechanism check: when the Fourier-layer
 semantic path is disabled, the no-Fourier variant times out at every tested
 scale; Fourier-enabled UCC modes return the canonical $42$-gate circuit
@@ -1387,8 +1392,10 @@ half-density, and full-pair controlled-phase networks, each with local $RZ$
 terms. The angle axis uses seeded nonresonant angles, QFT-like dyadic angles,
 and mixed signed angles. The size axis spans $4$k, $10$k, $20$k, and $50$k
 requested input gates. This suite therefore generalizes the theorem witness
-within the fixed-width regime of \cref{cor:fixed-width-fourier}; it is not a
-width-scaling experiment.
+within the fixed-width regime of \cref{cor:fixed-width-fourier}.
+To confirm the $O(m)$ scaling predicted by the theorem, we also run a width-axis sweep
+for the \texttt{full\_pair\_cp} topology at $n=5$ and $n=6$; these results are
+summarized in \cref{tab:width-axis-scaling}.
 
 \begin{table*}[t]
 \centering
@@ -1405,9 +1412,43 @@ full-pair CP & 2 & 6 & 4 / 2 & 6 / 6 & 42 gates, 24 depth, 12 \texttt{cx} \\
 Total comparable points & -- & 42 & 28 / 14 & 42 / 42 & repetition-independent at fixed topology/angle \\
 \bottomrule
 \end{tabularx}
-\caption{Generalized fixed-width Fourier witness suite. Each point is a paired comparison between semantic UCC and \texttt{qiskit opt3} on an $H D^r H$ circuit at $n=4$, with requested sizes up to $50$k gates. Semantic UCC completes every comparable point and wins structurally in all $42/42$ comparisons under the lexicographic metric (total gates, depth, \texttt{cx}). The semantic output is independent of the repetition count within each fixed topology and angle family, while \texttt{qiskit opt3} either grows with size or times out. PyZX and TKET were unavailable in this particular generalized run, so the external algebraic and peephole stress tests remain the canonical fixed-width comparisons in \cref{tab:external-failure-matrix}.}
+\caption{Generalized fixed-width Fourier witness suite. Each point is a paired comparison between semantic UCC and \texttt{qiskit opt3} on an $H D^r H$ circuit at $n=4$, with requested sizes up to $50$k gates. Semantic UCC completes every comparable point and wins structurally in all $42/42$ comparisons under the lexicographic metric (total gates, depth, \texttt{cx}). The semantic output is independent of the repetition count within each fixed topology and angle family, while \texttt{qiskit opt3} either grows with size or times out. Representative PyZX and TKET stress tests for the width-axis full-pair cases are reported in \cref{tab:width-axis-external-stress}.}
 \label{tab:generalized-fourier-witness}
 \end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{cccc}
+\toprule
+Width ($n$) & Terms ($m$) & Output Gates & CX Count \\
+\midrule
+4 & 6  & 42 & 12 \\
+5 & 10 & 65 & 20 \\
+6 & 15 & 93 & 30 \\
+\bottomrule
+\end{tabular}
+\caption{Width-axis scaling for the semantic Fourier-layer witness. For each fixed width $n$, the semantic output remains constant across all tested repetition counts $r$. Across widths, the constant output size scales as $O(m)$ where $m = n(n-1)/2$ is the number of controlled-phase terms in the full-pair diagonal layer.}
+\label{tab:width-axis-scaling}
+\end{table}
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+Width & Requested & semantic UCC & \texttt{qiskit opt3} & PyZX bridge & TKET FullPeephole \\
+\midrule
+5 & 4{,}000 & 65 & 11{,}711 & 14{,}640 & 30{,}369 \\
+5 & 10{,}000 & 65 & 29{,}315 & 36{,}640 & timeout \\
+6 & 4{,}000 & 93 & 12{,}108 & 15{,}321 & 33{,}881 \\
+6 & 10{,}000 & 93 & 30{,}417 & 38{,}487 & timeout \\
+\bottomrule
+\end{tabular}
+\caption{Representative external stress tests on the width-axis full-pair Fourier witness. Entries report output gates after the configured bridge pipeline and final target-basis compilation. PyZX completes all four runs but does not recover the bounded semantic forms $65$ and $93$; TKET completes the $4$k runs with larger outputs and times out at $10$k. This is pipeline-specific evidence about the configured Qiskit--PyZX/TKET--Qiskit paths, not a universal impossibility result for those tools.}
+\label{tab:width-axis-external-stress}
+\end{table*}
+
 
 \begin{figure}[t]
 \centering
@@ -1417,17 +1458,20 @@ Total comparable points & -- & 42 & 28 / 14 & 42 / 42 & repetition-independent a
 \end{figure}
 
 These data should be read together with
-\cref{fig:fourier-separation,tab:generalized-fourier-witness,thm:fourier-layer-separation,cor:fixed-width-fourier}.
+\cref{fig:fourier-separation,tab:generalized-fourier-witness,tab:width-axis-scaling,tab:width-axis-external-stress,thm:fourier-layer-separation,cor:fixed-width-fourier}.
 The experimental family is the fixed-width regime of the theorem: the semantic
 path aggregates the repeated commuting diagonal layer and emits a
 constant-size circuit, while post-lowering baselines either grow with input
 size or time out under the fixed protocol. The generalized suite shows that
 this signature is stable across multiple diagonal topologies and angle
 families at the same fixed width, including QFT-like dyadic angles and mixed
-signed angles. The PyZX and TKET rows are not used as formal lower bounds on
-those systems; they are empirical evidence that, in the canonical pipeline,
-strong external tools did not recover the global diagonal representation that
-the semantic theorem identifies as necessary.
+signed angles. The width-axis sweep confirms that the semantic output scales
+with the number of diagonal terms $m$, not with the repetition count $r$:
+$42$, $65$, and $93$ gates for $n=4,5,6$. The PyZX and TKET rows are not used
+as formal lower bounds on those systems; they are empirical evidence that, in
+the configured bridge pipelines, strong external tools did not recover the
+global diagonal representation that the semantic theorem identifies as
+necessary.
 
 \begin{table*}[t]
 \centering
@@ -1954,7 +1998,11 @@ repetition-independent output signature against the tested flat pipelines. The
 new generalized witness suite strengthens this point: across $42$ comparable
 fixed-width topology/angle/scale points, semantic UCC wins structurally against
 \texttt{qiskit opt3} in every case, while the semantic output remains tied to
-the diagonal term structure rather than to the repetition count.
+the diagonal term structure rather than to the repetition count. The
+width-axis and external-stress results extend the same signature to $n=5,6$:
+semantic UCC emits $65$ and $93$ gates, while Qiskit and PyZX remain in the
+tens of thousands of gates at $10$k and TKET times out in the configured
+pipeline.
 
 The ablation and resource-consequence experiments identify the mechanism. When
 the Fourier-layer semantic path is disabled, completed constant-output recovery
@@ -1989,8 +2037,8 @@ measured.
 This study has several limitations.
 \begin{enumerate}[leftmargin=1.5em]
     \item The theorem is a restricted-class separation, not a lower bound against all possible quantum compilers. A compiler that reconstructs a global phase-polynomial, ZX, or commuting-diagonal IR belongs to the semantic side of the separation.
-    \item The fixed-width $H D^r H$ family is intentionally structured. It is a minimal theorem witness, not a claim that all QFT or QPE instances exhibit the same $\Omega(r)$ gap. The generalized witness suite varies topology and angle family at $n=4$, but it is not yet a width-scaling experiment.
-    \item The external-baseline evidence is pipeline-specific. PyZX and TKET are evaluated through the artifact's QASM/Qiskit conversion and fixed-basis protocol, so their failure to recover the constant form is evidence about this configured pipeline rather than a theorem about those tools in all modes.
+    \item The fixed-width $H D^r H$ family is intentionally structured. It is a minimal theorem witness, not a claim that all QFT or QPE instances exhibit the same $\Omega(r)$ gap. The generalized witness suite varies topology and angle family at $n=4$, and the full-pair width-axis sweep covers $n=5,6$; a broader cross-product of width, topology, and angle families is left for future work.
+    \item The external-baseline evidence is pipeline-specific. PyZX and TKET are evaluated through the artifact's QASM/Qiskit conversion and fixed-basis protocol, including representative width-axis stress cases at $n=5,6$ and $4$k/$10$k requested gates, so their failure to recover the constant form is evidence about this configured pipeline rather than a theorem about those tools in all modes.
     \item The evaluation is centered on UCC and Qiskit-flavored workflows.
     \item The method is bounded and heuristic rather than globally optimal.
     \item Strong external baselines may still match or exceed the method on some families; mirrored and conjugation cases are therefore framed as parity recovery rather than primary separation evidence.
@@ -2030,10 +2078,13 @@ the fixed-width case.
 
 The UCC artifact makes this distinction operational. The canonical Fourier
 witness gives a strict separation from tested flat pipelines, the generalized
-fixed-width sweep shows the same repetition-independent semantic behavior
-across topology and angle-family axes, the Fourier ablation ties the constant
-output to semantic lifting, and the resource-consequence experiment shows how
-the same representation gap can inflate rotation-count synthesis proxies.
+fixed-width sweep and width-axis sweeps at $n=5, 6$ show the same
+repetition-independent semantic behavior across topology, angle-family, and
+width axes, the representative PyZX/TKET width-axis stress tests do not recover
+the bounded semantic form in the configured bridge pipelines, the Fourier
+ablation ties the constant output to semantic lifting, and the
+resource-consequence experiment shows how the same representation gap can
+inflate rotation-count synthesis proxies.
 Mirrored/conjugation families show the secondary anti-regression role of
 semantic lifting by restoring parity on Grover-like workloads. The remaining
 challenge is to broaden these recoverability gains beyond the present workload
