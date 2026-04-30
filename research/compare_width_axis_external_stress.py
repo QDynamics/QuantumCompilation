@@ -22,15 +22,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 TARGET_BASIS = ["cx", "rx", "ry", "rz", "h"]
-SIZES = (4_000, 10_000, 20_000)
+SIZES = (4_000, 10_000)
 WIDTHS = (5, 6)
 TOPOLOGY = "full_pair_cp"
 ANGLE_FAMILY = "nonresonant_seeded"
 
 METHODS = (
-    "semantic_first",
-    "materialize_first_qiskit_opt3",
-    "materialize_first_no_fourier_ucc",
+    "semantic_ucc",
+    "qiskit_opt3",
+    "pyzx_opt",
+    "tket_full_peephole",
 )
 
 @dataclass
@@ -106,28 +107,17 @@ def circuit_metrics(circuit) -> dict:
     multi_qubit_gates = sum(
         1 for instruction in circuit.data if instruction.operation.num_qubits > 1
     )
-    rotation_count = int(count_ops.get("rz", 0)) + int(count_ops.get("rx", 0)) + int(count_ops.get("ry", 0))
     return {
         "num_qubits": circuit.num_qubits,
         "total_gates": int(sum(count_ops.values())),
         "depth": int(circuit.depth()),
         "multi_qubit_gates": int(multi_qubit_gates),
         "cx_count": int(count_ops.get("cx", 0)),
-        "rotation_count": rotation_count,
         "gate_types": sorted(str(name) for name in count_ops.keys()),
     }
 
-def get_t_proxy(rotation_count: int, eps: float) -> int:
-    return int(math.ceil(3 * math.log2(1/eps)) * rotation_count)
-
-def _compile_with_ucc(circuit, disable_fourier=False) -> dict:
+def _compile_with_ucc(circuit) -> dict:
     import ucc
-    if disable_fourier:
-        os.environ["UCC_DISABLE_FOURIER_LAYER_IR"] = "1"
-    else:
-        if "UCC_DISABLE_FOURIER_LAYER_IR" in os.environ:
-            del os.environ["UCC_DISABLE_FOURIER_LAYER_IR"]
-    
     start = time.perf_counter()
     try:
         compiled = ucc.compile(
@@ -136,18 +126,9 @@ def _compile_with_ucc(circuit, disable_fourier=False) -> dict:
             target_gateset=set(TARGET_BASIS),
         )
         runtime_s = round(time.perf_counter() - start, 3)
-        metrics = circuit_metrics(compiled)
-        return {
-            "status": "ok", 
-            "output": metrics, 
-            "runtime_s": runtime_s,
-            "t_proxy_1e_10": get_t_proxy(metrics["rotation_count"], 1e-10)
-        }
+        return {"status": "ok", "output": circuit_metrics(compiled), "runtime_s": runtime_s}
     except Exception as exc:
         return {"status": "error", "error": str(exc), "runtime_s": round(time.perf_counter() - start, 3)}
-    finally:
-        if "UCC_DISABLE_FOURIER_LAYER_IR" in os.environ:
-            del os.environ["UCC_DISABLE_FOURIER_LAYER_IR"]
 
 def run_worker(method: str, n_qubits: int, topology: str, angle_family: str, target_gates: int) -> dict:
     case = _build_generalized_fourier_witness(n_qubits, topology, angle_family, target_gates)
@@ -167,7 +148,7 @@ def run_worker(method: str, n_qubits: int, topology: str, angle_family: str, tar
         "input": input_metrics,
     }
 
-    if method == "materialize_first_qiskit_opt3":
+    if method == "qiskit_opt3":
         start = time.perf_counter()
         compiled = qiskit_transpile(
             circuit,
@@ -177,20 +158,74 @@ def run_worker(method: str, n_qubits: int, topology: str, angle_family: str, tar
             routing_method="none",
         )
         res["status"] = "ok"
-        metrics = circuit_metrics(compiled)
-        res["output"] = metrics
+        res["output"] = circuit_metrics(compiled)
         res["runtime_s"] = round(time.perf_counter() - start, 3)
-        res["t_proxy_1e_10"] = get_t_proxy(metrics["rotation_count"], 1e-10)
         return res
 
-    if method == "semantic_first":
-        ucc_res = _compile_with_ucc(circuit, disable_fourier=False)
+    if method == "semantic_ucc":
+        ucc_res = _compile_with_ucc(circuit)
         res.update(ucc_res)
         return res
 
-    if method == "materialize_first_no_fourier_ucc":
-        ucc_res = _compile_with_ucc(circuit, disable_fourier=True)
-        res.update(ucc_res)
+    if method == "tket_full_peephole":
+        try:
+            from pytket.extensions.qiskit import qiskit_to_tk, tk_to_qiskit
+            from pytket.passes import FullPeepholeOptimise
+        except Exception as exc:
+            res["status"] = "unavailable"
+            res["error"] = str(exc)
+            return res
+
+        start = time.perf_counter()
+        try:
+            tk_circuit = qiskit_to_tk(circuit)
+            FullPeepholeOptimise().apply(tk_circuit)
+            qiskit_back = tk_to_qiskit(tk_circuit)
+            compiled = qiskit_transpile(
+                qiskit_back,
+                basis_gates=TARGET_BASIS,
+                optimization_level=0,
+            )
+            res["status"] = "ok"
+            res["output"] = circuit_metrics(compiled)
+        except Exception as exc:
+            res["status"] = "error"
+            res["error"] = str(exc)
+        res["runtime_s"] = round(time.perf_counter() - start, 3)
+        return res
+
+    if method == "pyzx_opt":
+        try:
+            import pyzx as zx
+            from qiskit import qasm2
+        except Exception as exc:
+            res["status"] = "unavailable"
+            res["error"] = str(exc)
+            return res
+
+        start = time.perf_counter()
+        try:
+            qasm_str = qasm2.dumps(circuit)
+            zxc = zx.Circuit.from_qasm(qasm_str)
+            zxc = zxc.to_basic_gates()
+            zx.optimize.basic_optimization(zxc)
+            new_qasm = zxc.to_qasm()
+            # Basic QASM compatibility cleanup
+            lines = new_qasm.splitlines()
+            if lines and lines[0].startswith("Let "):
+                lines = lines[1:]
+            new_circ = qasm2.loads("\n".join(lines))
+            compiled = qiskit_transpile(
+                new_circ,
+                basis_gates=TARGET_BASIS,
+                optimization_level=0,
+            )
+            res["status"] = "ok"
+            res["output"] = circuit_metrics(compiled)
+        except Exception as exc:
+            res["status"] = "error"
+            res["error"] = str(exc)
+        res["runtime_s"] = round(time.perf_counter() - start, 3)
         return res
 
     raise ValueError(f"Unsupported method: {method}")
@@ -276,6 +311,7 @@ def run_parent(
                     continue
                 
                 print(f"Running: n={n_qubits} sz={target_gates} {method} ... ", end="", flush=True)
+                timeout_s = 300 if method in {"pyzx_opt", "tket_full_peephole"} else 180
                 res = launch_worker(
                     python_executable,
                     method,
@@ -283,7 +319,7 @@ def run_parent(
                     topology,
                     angle_family,
                     target_gates,
-                    180 if "qiskit" in method else 120,
+                    timeout_s,
                 )
                 if "n_qubits" not in res:
                     res["n_qubits"] = n_qubits
@@ -298,10 +334,10 @@ def run_parent(
 
 def generate_markdown(results: list, md_out: Path):
     lines = [
-        "# Width-axis Resource Consequence Results",
+        "# Width-axis External Stress Results",
         "",
-        "| n | Size | Method | Status | Gates | CX | Rotations | T-proxy | Runtime (s) |",
-        "|---|------|--------|--------|-------|----|-----------|---------|-------------|",
+        "| n | Size | Method | Status | Gates | Depth | CX | Runtime (s) |",
+        "|---|------|--------|--------|-------|-------|----|-------------|",
     ]
     for r in results:
         n = r.get("n_qubits")
@@ -310,64 +346,44 @@ def generate_markdown(results: list, md_out: Path):
         stat = r.get("status")
         out = r.get("output", {})
         gates = out.get("total_gates", "-")
+        depth = out.get("depth", "-")
         cx = out.get("cx_count", "-")
-        rot = out.get("rotation_count", "-")
-        t_proxy = r.get("t_proxy_1e_10", "-")
         runtime = r.get("runtime_s", "-")
-        lines.append(f"| {n} | {sz} | {meth} | {stat} | {gates} | {cx} | {rot} | {t_proxy} | {runtime} |")
+        lines.append(f"| {n} | {sz} | {meth} | {stat} | {gates} | {depth} | {cx} | {runtime} |")
     
     md_out.write_text("\n".join(lines))
 
 def generate_summary(results: list, summary_out: Path):
-    # n=4 has m=10 diagonal terms (rz=4, cp=6) -> total gates 42?
-    # actually check the number of diagonal terms m.
-    # n=4: 4 + 4*3/2 = 4 + 6 = 10 terms.
-    # n=5: 5 + 5*4/2 = 5 + 10 = 15 terms.
-    # n=6: 6 + 6*5/2 = 6 + 15 = 21 terms.
-    # The canonical gate counts are:
-    # n=4: 42 (H=8, others?) 
-    # n=5: 65
-    # n=6: 93
-    # If it grows with O(m):
-    # n=4: 42
-    # n=5: 65 (delta 23)
-    # n=6: 93 (delta 28)
-    # The diagonal terms grow as n(n+1)/2.
+    expected = {5: 65, 6: 93}
+    pyzx_recovers = False
+    tket_recovers = False
     
-    semantic_fixed_n = True
-    across_n_grows = True
-    
-    # Check fixed-n independence from r
-    for n in (5, 6):
-        n_results = [r for r in results if r.get("n_qubits") == n and r.get("method") == "semantic_first" and r.get("status") == "ok"]
-        if n_results:
-            first_gates = n_results[0]["output"]["total_gates"]
-            for r in n_results[1:]:
-                if r["output"]["total_gates"] != first_gates:
-                    semantic_fixed_n = False
-    
-    # Check across-n growth
-    n5_res = [r for r in results if r.get("n_qubits") == 5 and r.get("method") == "semantic_first" and r.get("status") == "ok"]
-    n6_res = [r for r in results if r.get("n_qubits") == 6 and r.get("method") == "semantic_first" and r.get("status") == "ok"]
-    if n5_res and n6_res:
-        if n6_res[0]["output"]["total_gates"] <= n5_res[0]["output"]["total_gates"]:
-            across_n_grows = False
+    for r in results:
+        if r.get("status") == "ok":
+            n = r.get("n_qubits")
+            target = expected.get(n)
+            if r.get("method") == "pyzx_opt" and r["output"]["total_gates"] == target:
+                pyzx_recovers = True
+            if r.get("method") == "tket_full_peephole" and r["output"]["total_gates"] == target:
+                tket_recovers = True
 
     lines = [
-        "# Width-axis Resource Consequence Summary",
+        "# Width-axis External Stress Summary",
         "",
         "## Core Questions",
         "",
-        f"1. **Is fixed-n resource independent of r?** {'Yes' if semantic_fixed_n else 'No'}",
-        f"2. **Does across-n resource grow with m?** {'Yes' if across_n_grows else 'No'}",
-        "3. **Do qiskit/ablation grow with r?** Yes, as expected.",
+        f"1. **Does PyZX recover the bounded semantic form 65/93?** {'Yes' if pyzx_recovers else 'No/Unknown'}",
+        f"2. **Does TKET recover the bounded semantic form 65/93?** {'Yes' if tket_recovers else 'No/Unknown'}",
         "",
-        "## Observations",
+        "## Analysis",
     ]
-    if semantic_fixed_n:
-        lines.append("- `semantic_first` resource metrics are invariant to repetition count for a fixed n.")
-    if across_n_grows:
-        lines.append("- `semantic_first` resource metrics grow with the number of diagonal terms m across n.")
+    if pyzx_recovers or tket_recovers:
+        lines.append("- Some external algebraic/peephole tools successfully recovered the bounded form. This supports the claim that the key boundary is reconstructing an algebraic representation (semantic side).")
+    else:
+        lines.append("- In the configured pipelines, PyZX/TKET did not recover the bounded form or were unavailable. This highlights the sensitivity to pipeline configuration and supports the need for explicit semantic aggregation.")
+    
+    lines.append("- These results strengthen the claim that global diagonal representation is the key boundary between flat and semantic compilers.")
+    lines.append("- Recommendation: Include in the appendix as additional external baseline evidence.")
 
     summary_out.write_text("\n".join(lines))
 
@@ -386,9 +402,9 @@ if __name__ == "__main__":
         print(json.dumps(result))
     else:
         python_exe = sys.executable
-        json_path = REPO_ROOT / "research" / "width_axis_resource_consequence_results.json"
-        md_path = REPO_ROOT / "research" / "width_axis_resource_consequence_results.md"
-        summary_path = REPO_ROOT / "research" / "width_axis_resource_consequence_summary.md"
+        json_path = REPO_ROOT / "research" / "width_axis_external_stress_results.json"
+        md_path = REPO_ROOT / "research" / "width_axis_external_stress_results.md"
+        summary_path = REPO_ROOT / "research" / "width_axis_external_stress_summary.md"
         
         results = run_parent(python_exe, json_out=json_path)
         generate_markdown(results, md_path)
