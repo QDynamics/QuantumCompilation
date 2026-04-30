@@ -202,6 +202,7 @@
 - `5/5` strict structural-quality win over `qiskit opt3`
 - `50k/100k` 上同时形成 scalability win
 - 输出门数、depth、`cx` 都稳定塌缩到常数规模
+- **width 轴扩展**：在 $n=5$ 和 $n=6$ 的 width-axis sweep 中，`semantic_ucc` 的输出门数分别恒定为 `65` 和 `93` gates，准确验证了 $O(m)$ 的理论 scaling（其中 $m = n(n-1)/2$ 为 controlled-phase 项数）。
 - 这不是 inverse cancellation，而是 commuting diagonal / phase-polynomial
   结构在 semantic representation 中可恢复、在 flat lowered path 中难以恢复
 
@@ -209,7 +210,7 @@
 
 > representation-dependent recoverability gap 已经在一个非 inverse
 > Fourier/phase-polynomial family 上形成系统性 strict structural-quality
-> separation。
+> separation，且在 width 轴上符合理论 $O(m)$ 预测。
 
 ### 3.7 `mirrored / conjugation` 正例补充
 
