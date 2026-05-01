@@ -212,7 +212,27 @@
 > Fourier/phase-polynomial family 上形成系统性 strict structural-quality
 > separation，且在 width 轴上符合理论 $O(m)$ 预测。
 
-### 3.7 `mirrored / conjugation` 正例补充
+### 3.7 Correctness Certificate (Unitary Equivalence)
+
+为了确保 semantic Fourier 压缩没有牺牲电路正确性，对 $n=4, 5, 6$ 在不同尺寸 ($4k, 10k, 20k$) 和 Seed ($0-4$) 下进行了严格的 Unitary 等效性验证：
+
+- **验证方法**：使用 Qiskit `Operator.equiv` 检查 `semantic_ucc` 输出与原始输入的等效性（允许 global phase）。
+- **覆盖范围**：45 个 primary cases。
+- **结果**：所有 45 个测试用例均通过验证（`is_equivalent=True`）。
+- **结论**：Fourier 层语义压缩在实现常数级简化的同时，严格保持了电路的数学语义。
+
+### 3.8 Seed Robustness (稳健性验证)
+
+为了证明 $O(m)$ 压缩不是单一随机参数 Seed 的巧合，跨越 $n=4, 5, 6$ 进行多 Seed 稳健性实验：
+
+- **实验配置**：$n \in \{4, 5, 6\}$，5 个随机 Seed ($0-4$)，3 种尺寸 ($4k, 10k, 20k$)。
+- **核心证据**：对每个 $n$，`semantic_ucc` 的输出门数方差为 **0**。
+  - $n=4$: 恒定 42 门
+  - $n=5$: 恒定 65 门
+  - $n=6$: 恒定 93 门
+- **稳定性**：结果对重复次数 $r$ 和随机角度 Seed 均保持完全独立和稳定。
+
+### 3.9 `mirrored / conjugation` 正例补充
 
 为支撑第二条 `mirrored / conjugation` 理论线，又补了一组聚焦正例：
 
