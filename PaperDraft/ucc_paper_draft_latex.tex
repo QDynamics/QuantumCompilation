@@ -1465,7 +1465,11 @@ constant-size circuit, while post-lowering baselines either grow with input
 size or time out under the fixed protocol. The generalized suite shows that
 this signature is stable across multiple diagonal topologies and angle
 families at the same fixed width, including QFT-like dyadic angles and mixed
-signed angles. The width-axis sweep confirms that the semantic output scales
+signed angles. Topology stress tests further confirm that external bridge
+pipelines fail to recover the semantic form across all tested topologies
+(chain, ring, sparse), highlighting that the recoverability gap is not limited
+to the full-pair case. The width-axis sweep confirms that the semantic output
+ scales
 with the number of diagonal terms $m$, not with the repetition count $r$:
 $42$, $65$, and $93$ gates for $n=4,5,6$. The PyZX and TKET rows are not used
 as formal lower bounds on those systems; they are empirical evidence that, in

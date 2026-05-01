@@ -497,6 +497,9 @@
   \end{tabular}
 
   \vspace{0.8em}
+  \textbf{Correctness Certificate}: 使用 $n=4, 5, 6$ 的 Unitary 等效性验证（45 个测试点）确认了 semantic 压缩的数学正确性。
+
+  \vspace{0.8em}
   TKET FullPeephole 在固定协议下从 4k 起 timeout。
 
   \vspace{0.8em}
@@ -504,6 +507,7 @@
   \[
     \Omega(r)\quad\text{vs}\quad O(1).
   \]
+  \textbf{Width-Axis Scaling}: 验证了 $n=5$ ($65$门) 和 $n=6$ ($93$门) 的常数级输出，符合 $O(m)$ 理论预测。
 \end{frame}
 
 \begin{frame}{generalized witness suite}
@@ -525,6 +529,7 @@
     \text{semantic UCC vs qiskit opt3:
     strict structural wins } 42/42.
   \]
+  \textbf{Topology Stress}: 验证了外部桥接流水线（PyZX/TKET）在所有拓扑上均无法恢复 semantic 形式。
 
   \vspace{0.4em}
   \texttt{qiskit opt3} 在 28 个 comparable points 完成，在 14 个 points timeout；
