@@ -251,13 +251,16 @@ def main() -> None:
     args = parser.parse_args()
 
     experiments = _resolve_experiments(args)
+    needs_baseline_repo = any(
+        experiment.needs_baseline_repo for experiment in experiments
+    )
 
-    if not args.baseline_repo.exists():
+    if needs_baseline_repo and not args.dry_run and not args.baseline_repo.exists():
         raise FileNotFoundError(
             f"Baseline repo not found: {args.baseline_repo}. "
             "Clone the baseline branch or pass --baseline-repo explicitly."
         )
-    if not args.python_executable.exists():
+    if not args.dry_run and not args.python_executable.exists():
         raise FileNotFoundError(f"Python executable not found: {args.python_executable}")
 
     for experiment in experiments:

@@ -30,6 +30,7 @@ The core experiment scripts remain:
 - `compare_hardware_aware.py`
 - `scaling_study.py`
 - `ablation_study.py`
+- `resource_consequence_experiment.py`
 - `stability_repeated_runs.py`
 
 ## Environment Assumptions

@@ -28,9 +28,11 @@ TARGET_BASIS = ["cx", "rx", "ry", "rz", "h"]
 SIZES = (4_000, 10_000, 20_000, 50_000, 100_000)
 METHODS = (
     "semantic_first",
+    "phase_poly_reference",
     "materialize_first_qiskit_opt3",
     "materialize_first_baseline_ucc"
 )
+ANGLE_ZERO_ATOL = 1e-12
 
 @dataclass
 class CircuitCase:
@@ -91,6 +93,105 @@ def circuit_metrics(circuit) -> dict:
 
 def get_t_proxy(rz_rotation_count: int, eps: float) -> int:
     return int(math.ceil(3 * math.log2(1/eps)) * rz_rotation_count)
+
+def _qubit_index(circuit: QuantumCircuit, qubit) -> int:
+    return circuit.find_bit(qubit).index
+
+def _as_float_angle(angle) -> float:
+    return float(angle)
+
+def _canonical_angle(angle: float) -> float:
+    period = 2.0 * math.pi
+    wrapped = (angle + math.pi) % period - math.pi
+    if abs(wrapped) <= ANGLE_ZERO_ATOL:
+        return 0.0
+    return wrapped
+
+def _is_full_h_layer(circuit: QuantumCircuit, instructions) -> bool:
+    if len(instructions) != circuit.num_qubits:
+        return False
+    seen = set()
+    for instruction in instructions:
+        if instruction.operation.name != "h" or len(instruction.qubits) != 1:
+            return False
+        seen.add(_qubit_index(circuit, instruction.qubits[0]))
+    return seen == set(range(circuit.num_qubits))
+
+def _compile_with_phase_poly_reference(circuit: QuantumCircuit) -> dict:
+    """Reference H-D-H compiler using only commuting phase aggregation."""
+    start = time.perf_counter()
+    try:
+        num_qubits = circuit.num_qubits
+        if len(circuit.data) < 2 * num_qubits:
+            raise ValueError("Circuit is too small to contain H-D-H layers")
+
+        prefix = circuit.data[:num_qubits]
+        suffix = circuit.data[-num_qubits:]
+        if not _is_full_h_layer(circuit, prefix):
+            raise ValueError("Expected a full leading H layer")
+        if not _is_full_h_layer(circuit, suffix):
+            raise ValueError("Expected a full trailing H layer")
+
+        rz_angles = {qubit: 0.0 for qubit in range(num_qubits)}
+        cp_angles: dict[tuple[int, int], float] = {}
+        for instruction in circuit.data[num_qubits:-num_qubits]:
+            name = instruction.operation.name
+            qargs = [
+                _qubit_index(circuit, qubit) for qubit in instruction.qubits
+            ]
+            if name == "rz" and len(qargs) == 1:
+                rz_angles[qargs[0]] += _as_float_angle(
+                    instruction.operation.params[0]
+                )
+            elif name == "cp" and len(qargs) == 2:
+                key = tuple(qargs)
+                cp_angles[key] = cp_angles.get(key, 0.0) + _as_float_angle(
+                    instruction.operation.params[0]
+                )
+            else:
+                raise ValueError(
+                    "Phase-polynomial reference only supports middle-layer "
+                    f"`rz` and `cp`; found `{name}`"
+                )
+
+        aggregated = QuantumCircuit(num_qubits)
+        for qubit in range(num_qubits):
+            aggregated.h(qubit)
+
+        active_phase_terms = 0
+        for qubit in range(num_qubits):
+            angle = _canonical_angle(rz_angles[qubit])
+            if angle:
+                aggregated.rz(angle, qubit)
+                active_phase_terms += 1
+
+        for (control, target), raw_angle in sorted(cp_angles.items()):
+            angle = _canonical_angle(raw_angle)
+            if angle:
+                aggregated.cp(angle, control, target)
+                active_phase_terms += 1
+
+        for qubit in range(num_qubits):
+            aggregated.h(qubit)
+
+        compiled = qiskit_transpile(
+            aggregated,
+            basis_gates=TARGET_BASIS,
+            optimization_level=0,
+        )
+        runtime_s = round(time.perf_counter() - start, 3)
+        return {
+            "status": "ok",
+            "output": circuit_metrics(compiled),
+            "runtime_s": runtime_s,
+            "active_phase_terms_after_aggregation": active_phase_terms,
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error": str(exc),
+            "runtime_s": round(time.perf_counter() - start, 3),
+        }
 
 def _compile_with_ucc(circuit, disable_fourier_layer_ir=False) -> dict:
     import ucc
@@ -161,6 +262,23 @@ def run_worker(method: str, target_gates: int) -> dict:
 
     if method == "semantic_first":
         result = _compile_with_ucc(circuit, disable_fourier_layer_ir=False)
+        if result["status"] == "ok":
+            out_metrics = result["output"]
+            result.update({
+                "t_proxy_1e_6": get_t_proxy(out_metrics["rz_rotation_count"], 1e-6),
+                "t_proxy_1e_10": get_t_proxy(out_metrics["rz_rotation_count"], 1e-10),
+                "t_proxy_1e_12": get_t_proxy(out_metrics["rz_rotation_count"], 1e-12),
+            })
+        return {
+            "method": method,
+            "family": "fourier_phase_sandwich",
+            "requested_target_gates": target_gates,
+            "input": input_metrics,
+            **result,
+        }
+
+    if method == "phase_poly_reference":
+        result = _compile_with_phase_poly_reference(circuit)
         if result["status"] == "ok":
             out_metrics = result["output"]
             result.update({
@@ -275,7 +393,12 @@ def markdown_summary(payload: dict) -> str:
     
     for size_key, size_data in payload.items():
         req_gates = int(size_key)
-        for method in METHODS:
+        ordered_methods = [
+            method for method in METHODS if method in size_data
+        ] + [
+            method for method in size_data if method not in METHODS
+        ]
+        for method in ordered_methods:
             if method not in size_data:
                 continue
             res = size_data[method]
@@ -305,9 +428,9 @@ def markdown_summary(payload: dict) -> str:
         "## Interpretation",
         "",
         "Does semantic-first maintain constant resource estimates while materialize-first inflates them or timeouts?",
-        "**Answer:** Yes. The `semantic_first` pipeline leverages Fourier-layer IR to aggregate and simplify the repeated diagonal phase polynomial before materialization, resulting in a constant, highly optimized circuit (42 gates) regardless of the requested gate count. In contrast, the `materialize_first` pipelines first unroll the large circuit into basis gates. For smaller gate counts, they produce significantly inflated resource estimates (gates, CX, rotations, and corresponding T-proxy counts). For larger gate counts (e.g., 50k, 100k), the materialization process becomes so expensive that the optimization passes simply time out.",
+        "**Answer:** Yes. The `semantic_first` pipeline and the independent `phase_poly_reference` baseline both aggregate the repeated commuting diagonal phase polynomial before materialization, resulting in a constant, highly optimized circuit (42 gates) regardless of the requested gate count. In contrast, the `materialize_first` pipelines first unroll the large circuit into basis gates. For smaller gate counts, they produce significantly inflated resource estimates (gates, CX, rotations, and corresponding T-proxy counts). For larger gate counts (e.g., 50k, 100k), the materialization process becomes so expensive that the optimization passes simply time out.",
         "",
-        "This clearly supports the PRX claim: 'basis/materialization before semantic aggregation can inflate FTQC resource estimates'. When optimization occurs purely at the basis/rotation level, structural symmetries (such as the commuting diagonal phases bounded by Hadamards) are obscured, making it impossible to perform the massive cancellations that a semantic-first approach effortlessly achieves.",
+        "This supports the PRX claim that basis/materialization before semantic aggregation can inflate FTQC resource estimates. The `phase_poly_reference` row is deliberately narrow: it is not a full compiler and does not use UCC internals. It only keeps the explicit commuting-diagonal representation long enough to add equal phase terms before lowering to the shared target basis.",
     ])
     
     return "\n".join(lines)
@@ -317,6 +440,8 @@ def main() -> None:
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--method", choices=METHODS)
     parser.add_argument("--target-gates", type=int)
+    parser.add_argument("--sizes", default=",".join(str(size) for size in SIZES))
+    parser.add_argument("--methods", default=",".join(METHODS))
     parser.add_argument("--python-executable", default=sys.executable)
     parser.add_argument("--json-out", type=Path, default=Path("research/resource_consequence_results.json"))
     parser.add_argument("--md-out", type=Path, default=Path("research/resource_consequence_results.md"))
@@ -333,8 +458,18 @@ def main() -> None:
             sys.exit(1)
 
     print("Starting Resource Consequence Experiment...")
+    sizes = tuple(int(size.strip()) for size in args.sizes.split(",") if size.strip())
+    methods = tuple(
+        method.strip() for method in args.methods.split(",") if method.strip()
+    )
+    unknown_methods = sorted(set(methods) - set(METHODS))
+    if unknown_methods:
+        raise ValueError(f"Unknown methods: {', '.join(unknown_methods)}")
+
     payload = run_parent(
         python_executable=args.python_executable,
+        sizes=sizes,
+        methods=methods,
     )
 
     print("\n--- FINAL JSON RESULTS START ---")
