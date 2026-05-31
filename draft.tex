@@ -1,0 +1,705 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+\title{Toward Pre-Basis Structural Simplification for Large Structured Quantum Circuits}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Quantum circuit compilers often lower structured input circuits into basis gates before exploiting higher-level cancellation opportunities. Once this structure is destroyed, later local optimization passes may fail to recover obvious simplifications and may even amplify circuit size. We study this effect in the context of UCC and propose a bounded pre-basis structural preprocessing stage that combines inverse-aware cancellation, repeated-block detection, repeated-prefix reuse, and conservative candidate selection. The goal is not to claim a universally superior compiler, but to test whether structure-aware preprocessing before basis lowering can improve UCC's default behavior on large structured workloads.
+
+Our results show that pipeline placement matters. Under a fixed target basis, the optimized branch reduces repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$ workloads from $968{,}784$ gates to $0$, while baseline UCC expands the same $100{,}000$-gate input to nearly one million gates. On official Qiskit circuit-library instances, the optimized branch recovers \texttt{qiskit opt3}-level output quality while greatly improving on baseline UCC, for example reducing \texttt{phase\_estimation\_real} from $471{,}819$ gates to $166{,}805$. On a $20$-qubit line-connectivity backend, the optimized branch also yields a stable external-baseline win on \texttt{hw\_mqt\_qaoa\_20}, beating \texttt{qiskit opt3} across five tested fixed seeds in total gates, depth, and \texttt{cx} count. These results support a narrower but stronger claim: bounded structure-aware preprocessing before basis lowering is a meaningful compiler-systems optimization opportunity for UCC.
+\end{abstract}
+
+\section{Introduction}
+
+Quantum compilation pipelines routinely translate circuits into a target basis before performing aggressive local rewriting and synthesis. This is often reasonable, but on large structured circuits it can be counterproductive. If inverse structure, repeated blocks, or mirrored structure is only obvious in the high-level representation, then early basis lowering may remove exactly the information needed for cheap simplification.
+
+This paper studies that phenomenon in UCC. The question we ask is not whether global quantum circuit optimization can be solved in general. Instead, we ask whether a bounded pre-basis preprocessing stage can cheaply exploit obvious structure before downstream compilation destroys it.
+
+The present work should be understood as a compiler-systems study of pipeline placement and structure-aware preprocessing. It is not a claim that the method already dominates strong external baselines on all workloads, and it is not a claim that exact inverse cancellation itself is novel.
+
+\section{Related Work}
+
+Our work is best understood as a compiler-systems study of pipeline placement, structure-aware preprocessing, and anti-regression behavior for large structured quantum circuits. It is therefore related to, but distinct from, prior work in representation-aware simplification, architecture-aware compilation, benchmark design for quantum software, and open compiler infrastructure.
+
+A first relevant line of work studies how the representation used for optimization affects which simplifications remain visible. In particular, ZX-calculus-based simplification has shown that alternative circuit representations can expose reductions that are difficult to recover from a gate-level instruction list alone. Our motivation is similar at a systems level: useful inverse, repeated, and mirrored structure may be easy to identify before basis lowering but substantially harder to recover afterward. However, our contribution is not a new general rewriting formalism. Instead, we study a bounded, upstream-compatible pre-basis stage inside UCC that preserves and exploits such structure before basis lowering obscures it.
+
+A second related direction emphasizes that compilation outcomes depend strongly on pipeline strategy and preprocessing decisions. For example, architecture-aware compilation via lazy synthesis shows that decomposition, routing, and synthesis choices can materially affect final gate count and depth. Our setting differs in target---we focus on pre-basis structural preservation rather than routing under connectivity constraints---but the broader lesson is closely aligned with our results: nontrivial pipeline choices can dominate final output quality on structured workloads.
+
+Benchmark design is also central to our paper. Public benchmark work has argued that quantum software tools should be evaluated on practical and relevant benchmark suites to improve comparability, reproducibility, and transparency across tools and abstraction levels. Likewise, holistic benchmarking work argues that meaningful performance assessment often requires studying the full stack, including compilation strategy and hardware effects. These ideas directly motivate our evaluation design: beyond official Qiskit library instances, we include public benchmark suites, hardware-aware experiments, scaling studies, ablations, and standardized artifact packaging.
+
+Finally, our paper fits within a broader line of work that treats compiler infrastructure and specialized compiler flows as publishable research contributions in their own right. Open-source compiler frameworks established the value of extensible toolchains with optimization plug-ins, synthesis passes, and hardware-targeting components. More recent compiler papers have also shown that architecture-specific compiler systems are well within scope. Our contribution differs from those works in scope and claim: we do not propose a universally dominant compiler, but rather a bounded structure-aware preprocessing layer and candidate-selection strategy that materially improves UCC behavior on a class of structured workloads.
+
+\section{Contributions}
+
+This paper is built around the following contributions.
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item We identify that large-circuit growth in UCC is not only a gate-set translation effect; some growth is caused by missed simplification opportunities before basis lowering.
+    \item We design a bounded pre-basis structural preprocessing stage that combines inverse-aware cancellation, repeated-prefix detection, repeated-run detection, and adjacent inverse-block removal.
+    \item We integrate this stage into the UCC decision flow through conservative candidate selection among basis translation, the default UCC pipeline, and a preset-reference candidate.
+    \item We show that this design can recover strong external-baseline quality on official real instances and public benchmark suites while also yielding a stable hardware-aware win on one public QAOA family.
+\end{enumerate}
+
+\section{Problem Definition}
+
+Let a high-level quantum circuit be represented as a finite instruction sequence
+\[
+C = (g_1, g_2, \dots, g_m),
+\]
+where each instruction $g_i$ carries an operation type, normalized parameter tuple, quantum operand tuple, and classical operand tuple. Let $\mathcal{L}_B(\cdot)$ denote lowering into a fixed target basis $B$, and let $\mathcal{P}_{\mathrm{ucc}}(\cdot)$ denote the default downstream UCC compilation flow after lowering.
+
+We are interested in structured circuits containing one or more of the following patterns:
+\begin{enumerate}[leftmargin=1.5em]
+    \item exact inverse blocks: $U U^\dagger$,
+    \item repeated exact blocks: $U^k = U U \cdots U$,
+    \item mirrored blocks: $U M U^\dagger$,
+    \item dominant repeated prefixes followed by a short tail.
+\end{enumerate}
+
+The paper studies the following question:
+
+\begin{quote}
+Given a high-level circuit $C$, can a bounded preprocessing pass produce a simplified circuit $C'$ that preserves semantics while exposing structure that would otherwise be lost during basis lowering?
+\end{quote}
+
+The key distinction is between:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{gate-set translation overhead}, which is expected when lowering to a new target basis, and
+    \item \textbf{missed structural simplification}, which occurs when the pipeline fails to exploit structure that is available before lowering.
+\end{itemize}
+
+\begin{definition}[Stable signature]
+For an instruction $g$, define its \emph{stable signature}
+\[
+\sigma(g) := (\mathrm{name}(g), \mathrm{params}(g), \mathrm{qargs}(g), \mathrm{cargs}(g)),
+\]
+where parameters are normalized into a canonical numeric representation and operand lists are recorded in a fixed order. For a block $U = (g_i,\dots,g_j)$, define
+\[
+\sigma(U) := (\sigma(g_i),\dots,\sigma(g_j)).
+\]
+\end{definition}
+
+\begin{definition}[Pre-basis structural opportunity]
+A \emph{pre-basis structural opportunity} in a circuit $C$ is a rewrite or candidate reduction that is detectable from high-level block structure in $C$ but is not guaranteed to remain detectable after applying $\mathcal{L}_B$. Typical examples include exact inverse blocks, repeated exact blocks, mirrored blocks, and dominant repeated prefixes.
+\end{definition}
+
+\begin{definition}[Structural regression]
+Let $\kappa(\cdot)$ be a structural cost measure, for example a tuple consisting of total gate count, depth, and two-qubit gate count under a fixed tie-breaking rule. We say that the default compilation flow exhibits a \emph{structural regression} on input $C$ if
+\[
+\kappa\!\left(\mathcal{P}_{\mathrm{ucc}}(\mathcal{L}_B(C))\right)
+>
+\kappa(\widetilde{C}),
+\]
+for some semantically equivalent candidate $\widetilde{C}$ obtainable from $C$ by bounded pre-basis structural preprocessing followed by the same target basis protocol.
+\end{definition}
+
+This definition is intentionally operational rather than universal: the paper does not claim that all useful structure can be characterized in closed form, only that some important classes of structure can be identified early enough to prevent avoidable regressions.
+
+\section{Algorithm}
+
+\subsection{Stable Signatures}
+
+Each instruction is mapped to a stable signature consisting of:
+\begin{itemize}[leftmargin=1.5em]
+    \item operation name,
+    \item normalized parameters,
+    \item qubit indices,
+    \item classical bit indices.
+\end{itemize}
+This allows repeated-block and inverse-block detection to operate directly on the instruction stream rather than on a basis-lowered representation.
+
+\subsection{Bounded Pre-Basis Structural Preprocessing}
+
+Let $\mathcal{S}$ denote the preprocessing operator. Starting from a high-level circuit $C^{(0)} := C$, the pass performs at most $K$ outer iterations. At iteration $t$, it applies a fixed ordered set of bounded structural scans:
+\begin{enumerate}[leftmargin=1.5em]
+    \item repeated-prefix detection and reuse,
+    \item repeated-run detection and reuse,
+    \item adjacent block--inverse(block) cancellation,
+    \item commutative inverse cancellation.
+\end{enumerate}
+If one full outer iteration fails to reduce the selected structural cost measure, the pass stops early and returns the current circuit.
+
+\begin{definition}[Bounded preprocessing map]
+Given an iteration bound $K \in \mathbb{N}$, define
+\[
+\mathcal{S}_K(C) := C^{(T)},
+\]
+where $T \le K$ is the first iteration index for which either
+\begin{enumerate}[leftmargin=1.5em]
+    \item no rule application reduces the selected cost measure, or
+    \item the hard iteration limit $K$ is reached.
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[Termination]
+For every finite input circuit $C$ and every finite iteration budget $K$, the preprocessing map $\mathcal{S}_K(C)$ terminates.
+\end{proposition}
+
+\begin{proof}
+The algorithm is explicitly bounded by the configured outer-iteration limit $K$. Each inner scan is performed over a finite instruction sequence, and each iteration either stops early or produces another finite sequence for the next round. Hence the algorithm halts after at most $K$ iterations.
+\end{proof}
+
+\begin{proposition}[Local semantic preservation]
+Each individual rewrite used in the preprocessing stage preserves circuit semantics, provided that block equality and inverse relationships are tested using exact signature equality and exact inverse matching under the chosen instruction model.
+\end{proposition}
+
+\begin{proof}
+Adjacent block--inverse(block) cancellation preserves semantics by the identity $U U^\dagger = I$. Repeated-block and repeated-prefix rewrites preserve semantics because they replace exact recurring instruction subsequences by equivalent reused structure rather than by approximate synthesis. Commutative inverse cancellation preserves semantics whenever commuting instructions are reordered only across operators that preserve the equality of the overall unitary. Candidate selection itself is semantics-preserving because it chooses among semantically equivalent compiled candidates.
+\end{proof}
+
+\subsection{Candidate Selection}
+
+After preprocessing, the compiler conservatively compares:
+\begin{itemize}[leftmargin=1.5em]
+    \item pure basis translation,
+    \item the default UCC pipeline,
+    \item a preset-reference candidate for large repeated structures.
+\end{itemize}
+
+Formally, let
+\[
+\mathcal{C}(C) :=
+\left\{
+\mathcal{L}_B(C),
+\mathcal{P}_{\mathrm{ucc}}(\mathcal{L}_B(C)),
+\mathcal{P}_{\mathrm{ucc}}(\mathcal{L}_B(\mathcal{S}_K(C))),
+\mathcal{R}(C)
+\right\},
+\]
+where $\mathcal{R}(C)$ denotes an optional preset-reference candidate when the fast path for large repeated structures is enabled.
+
+Let $\kappa(\cdot)$ denote a conservative structural cost function with fixed lexicographic tie-breaking. The selected output is
+\[
+\widehat{C} := \arg\min_{X \in \mathcal{C}(C)} \kappa(X).
+\]
+
+\begin{remark}[Why candidate selection matters]
+The preprocessing rules alone are not intended to dominate all downstream flows. Instead, the role of candidate selection is to prevent avoidable structured-circuit regressions by preserving the best available output among a small family of semantically equivalent candidates.
+\end{remark}
+
+\subsection{Complexity Discussion}
+
+The method is intentionally bounded and does not attempt global optimization. Let $n := |C|$ be the number of high-level instructions. Suppose one outer iteration consists of $r$ bounded scans, and scan $j$ has cost $T_j(n)$. Then the total runtime of preprocessing satisfies
+\[
+T_{\mathrm{pre}}(n)
+\in
+O\!\left(
+K \cdot \sum_{j=1}^{r} T_j(n)
+\right).
+\]
+In the intended implementation, the dominant scans are near-linear in $n$ up to implementation-dependent hashing, block-comparison, and bookkeeping costs, so the practical behavior is designed to remain near-linear up to a bounded constant factor on repeat-heavy workloads.
+
+A large-circuit fast path is used for repeat-dominant cases so that obvious repeated-prefix structure does not always trigger the full expensive route. This is one reason the method is best viewed as a bounded systems heuristic rather than as a globally optimizing compiler pass.
+
+\begin{proposition}[Expected regime of benefit]
+The preprocessing stage is most likely to help on circuits whose useful structure is already explicit at the high-level instruction stream, especially exact inverse blocks, repeated exact blocks, mirrored blocks, and dominant repeated prefixes. It is not expected to uniformly improve families whose performance is dominated by later synthesis or routing decisions that are not captured by the preprocessing signatures.
+\end{proposition}
+
+\begin{proof}[Justification]
+This follows from the construction of the pass. Every preprocessing rule operates on high-level structural regularities detected through stable signatures or exact inverse relations. Therefore the pass can only exploit structure that survives in this representation. Conversely, if output quality is dominated by later basis-specific synthesis or hardware-routing effects not visible at this stage, the preprocessing pass may improve little or only preserve parity with stronger downstream baselines.
+\end{proof}
+
+\section{Integration Into UCC}
+
+The optimized branch changes the UCC flow in three places:
+\begin{enumerate}[leftmargin=1.5em]
+    \item it performs structural simplification before basis lowering,
+    \item it avoids unnecessary default-UCC execution on large dominant repeated structures,
+    \item it compares candidate outputs conservatively to avoid structured-circuit regressions.
+\end{enumerate}
+
+This means the contribution is not merely a new rewrite rule, but a change in where and when structure is exploited in the compilation pipeline. In particular, the integration logic is designed around the formal distinction introduced above: some circuit growth is unavoidable basis-translation overhead, while some growth is better understood as structural regression that can be mitigated by bounded pre-basis preprocessing and conservative candidate selection.
+
+\section{Experimental Setup}
+
+\subsection{Benchmark Families}
+
+The first study evaluates four structured benchmark families, each instantiated at $100{,}000$ gates:
+\begin{enumerate}[leftmargin=1.5em]
+    \item repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$,
+    \item QPE-style,
+    \item QAOA ring,
+    \item mirrored Grover-like circuits.
+\end{enumerate}
+
+\subsection{Modes Compared}
+
+The first comparison uses three modes:
+\begin{enumerate}[leftmargin=1.5em]
+    \item baseline UCC,
+    \item UCC with an optional post-transpilation pass,
+    \item experimental pre-basis structural simplification.
+\end{enumerate}
+
+\subsection{Metrics}
+
+We track:
+\begin{itemize}[leftmargin=1.5em]
+    \item total gate count,
+    \item circuit depth,
+    \item two-qubit gate count,
+    \item runtime.
+\end{itemize}
+
+For the fixed-basis control study, all methods are lowered to
+\[
+B = [\texttt{cx}, \texttt{rx}, \texttt{ry}, \texttt{rz}, \texttt{h}].
+\]
+
+\section{Results}
+
+\subsection{Controlled Fixed-Basis Results}
+
+\subsubsection{Repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$ ($100$k gates)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Method & Output Gates & Output Depth \\
+\midrule
+translation only & 400{,}000 & 142{,}500 \\
+baseline UCC & 968{,}784 & 276{,}266 \\
+optimized branch & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Controlled fixed-basis results for repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$.}
+\end{table}
+
+\subsubsection{Repeated $\mathrm{QFT}+\mathrm{QFT}$ control ($100$k gates)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Method & Output Gates & Output Depth \\
+\midrule
+translation only & 400{,}000 & 140{,}000 \\
+baseline UCC & 1{,}207{,}504 & 317{,}501 \\
+optimized branch & 347{,}500 & 125{,}000 \\
+\bottomrule
+\end{tabular}
+\caption{Controlled fixed-basis results for repeated $\mathrm{QFT}+\mathrm{QFT}$.}
+\end{table}
+
+These results support a narrower claim than a generic bug report: after controlling for final target basis, there is still a large structural opportunity before basis lowering.
+
+\subsection{First 100k-Family Comparison}
+
+This table records the earliest end-to-end family comparison that motivated the later optimization work. It is included as development context rather than as the final frozen-branch evaluation.
+
+\begin{table}[p]
+\centering
+\begin{tabular}{llrrrr}
+\toprule
+Family & Mode & Output Gates & Output Depth & 2Q Gates & Runtime \\
+\midrule
+QFT / inverse-QFT & baseline & 968{,}784 & 276{,}266 & 135{,}004 & 6.514 s \\
+QFT / inverse-QFT & post-pass & 896{,}288 & 272{,}516 & 135{,}004 & 23.885 s \\
+QFT / inverse-QFT & pre-basis & 0 & 0 & 0 & 1.627 s \\
+QPE-style & baseline & 456{,}013 & 236{,}011 & 60{,}002 & 3.762 s \\
+QPE-style & post-pass & 428{,}007 & 234{,}011 & 60{,}002 & 10.695 s \\
+QPE-style & pre-basis & 212{,}006 & 140{,}002 & 60{,}002 & 226.131 s \\
+QAOA ring & baseline & 300{,}055 & 163{,}055 & 40{,}000 & 2.440 s \\
+QAOA ring & post-pass & 262{,}127 & 145{,}091 & 40{,}000 & 6.326 s \\
+QAOA ring & pre-basis & 100{,}000 & 62{,}000 & 40{,}000 & 5.042 s \\
+Grover mirrored & baseline & 4{,}122{,}006 & 2{,}166{,}021 & 468{,}000 & 24.305 s \\
+Grover mirrored & post-pass & 3{,}762{,}014 & 2{,}076{,}018 & 468{,}000 & 111.706 s \\
+Grover mirrored & pre-basis & 1{,}158{,}011 & 762{,}010 & 468{,}000 & 60.556 s \\
+\bottomrule
+\end{tabular}
+\caption{Earliest end-to-end family comparison used as development context.}
+\end{table}
+
+\subsection{Runtime Improvements on Repeat-Heavy Workloads}
+
+The following measurements are milestone comparisons from earlier runtime optimization rounds. They are useful for showing how the branch evolved, but the canonical frozen-branch results for the paper are the tables in the later sections.
+
+\paragraph{Repeated QFT ($100$k gates).}
+\begin{itemize}[leftmargin=1.5em]
+    \item previous prototype: $347{,}500$ gates, depth $125{,}000$, $20.005$ s,
+    \item current implementation: $347{,}500$ gates, depth $125{,}000$, $6.368$ s.
+\end{itemize}
+
+\paragraph{Dominant repeated prefix + small tail ($100$k gates).}
+\begin{itemize}[leftmargin=1.5em]
+    \item previous version: $399{,}840$ gates, depth $139{,}944$, $19.425$ s,
+    \item current implementation: $347{,}401$ gates, depth $124{,}990$, $8.705$ s.
+\end{itemize}
+
+\paragraph{QAOA ring.}
+\begin{itemize}[leftmargin=1.5em]
+    \item earlier UCC behavior: $290{,}092$ gates, depth $170{,}189$,
+    \item current implementation: $100{,}000$ gates, depth $62{,}000$, $1.763$ s.
+\end{itemize}
+
+\subsection{External Baselines Under a Fixed Target Basis}
+
+We also compared the current branch against stronger fixed-basis references at $100{,}000$ gates using the target basis
+\[
+B = [\texttt{cx}, \texttt{rx}, \texttt{ry}, \texttt{rz}, \texttt{h}].
+\]
+
+The most important observations are as follows.
+
+\paragraph{Repeated $\mathrm{QFT}+\mathrm{QFT}^{-1}$.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{translation\_only}: $400{,}000$
+    \item \texttt{Qiskit opt1}: $365{,}002$
+    \item \texttt{Qiskit CommutativeInverseCancellation}: $0$
+    \item baseline UCC: $968{,}784$
+    \item optimized UCC: $0$
+\end{itemize}
+This confirms that exact inverse cancellation is not novel by itself, since a general Qiskit technique already solves the canonical inverse case.
+
+\paragraph{Repeated $\mathrm{QFT}+\mathrm{QFT}$.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{translation\_only}: $400{,}000$
+    \item \texttt{Qiskit opt3}: $347{,}500$
+    \item baseline UCC: $1{,}207{,}504$
+    \item optimized UCC: $347{,}500$
+\end{itemize}
+Here the optimized branch matches the strongest Qiskit result under this fixed-basis comparison, while substantially improving on baseline UCC.
+
+\paragraph{QPE-style.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{translation\_only}: $396{,}000$
+    \item baseline UCC: $456{,}013$
+    \item optimized UCC: $167{,}800$
+    \item \texttt{Qiskit opt3}: timeout at $>120$ s
+\end{itemize}
+This family is now one of the clearest positive examples for the branch under the fixed-basis protocol: the optimized branch reduces the output far below both pure translation and baseline UCC, while the strongest Qiskit preset does not finish within the configured timeout.
+
+\paragraph{QAOA ring.}
+\begin{itemize}[leftmargin=1.5em]
+    \item all strong fixed-basis baselines preserve the circuit at $100{,}000$
+    \item baseline UCC expands to $300{,}055$
+    \item optimized UCC returns $100{,}000$
+\end{itemize}
+So on this family, the optimized branch acts primarily as an anti-regression mechanism for UCC rather than as a stronger-than-Qiskit optimizer.
+
+\paragraph{Grover mirrored.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{translation\_only}: $1{,}370{,}000$
+    \item \texttt{Qiskit opt1}: $1{,}184{,}009$
+    \item \texttt{Qiskit opt3}: $1{,}158{,}011$
+    \item baseline UCC: $4{,}122{,}006$
+    \item optimized UCC: $1{,}158{,}011$
+\end{itemize}
+On this family, the optimized branch now matches the strongest Qiskit output quality under the fixed-basis comparison, while still substantially improving over baseline UCC.
+
+\subsection{Official Real Algorithm-Family Instances}
+
+We also evaluated the current branch on three official Qiskit circuit-library instances under the same fixed target basis:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{phase\_estimation\_real},
+    \item \texttt{grover\_real},
+    \item \texttt{qaoa\_real}.
+\end{itemize}
+
+The frozen-run results are shown in \cref{tab:real-instances}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Instance & baseline UCC & optimized UCC & qiskit opt3 \\
+\midrule
+\texttt{phase\_estimation\_real} & $471{,}819$ gates, $75.538$s & $166{,}805$ gates, $1.989$s & $166{,}805$ gates, $1.254$s \\
+\texttt{grover\_real} & $287{,}047$ gates, $1.688$s & $79{,}029$ gates, $0.955$s & $79{,}029$ gates, $0.521$s \\
+\texttt{qaoa\_real} & $167{,}833$ gates, $0.904$s & $36{,}512$ gates, $0.420$s & $36{,}512$ gates, $0.273$s \\
+\bottomrule
+\end{tabular}
+\caption{Frozen-run results on official real algorithm-family instances.}
+\label{tab:real-instances}
+\end{table}
+
+These real-instance results support two claims. First, the optimized branch clearly fixes severe baseline-UCC regressions on real algorithm-family circuits. Second, on these official library instances the optimized branch consistently recovers \texttt{qiskit opt3}-level output quality while keeping runtime within a small constant factor of direct \texttt{qiskit opt3}.
+
+\subsection{Public Benchmark Suite Results}
+
+To move beyond official library examples, we added two public benchmark sources:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{MQT Bench},
+    \item \texttt{SupermarQ},
+\end{itemize}
+using the same fixed-basis protocol as the rest of the paper.
+
+\paragraph{MQT Bench.}
+For \texttt{mqt\_qpeexact\_32}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: $1{,}891$ gates, $0.023$s
+    \item baseline UCC: $5{,}494$ gates, $0.089$s
+    \item optimized UCC: $1{,}891$ gates, $0.425$s
+\end{itemize}
+
+For \texttt{mqt\_qaoa\_32}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: $1{,}422$ gates, $0.014$s
+    \item baseline UCC: $6{,}310$ gates, $0.071$s
+    \item optimized UCC: $1{,}422$ gates, $0.327$s
+\end{itemize}
+
+For \texttt{mqt\_grover\_20}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: $3{,}848{,}810$ gates, $36.028$s
+    \item baseline UCC: timeout at $>120$s
+    \item optimized UCC: $3{,}848{,}810$ gates, $58.424$s
+\end{itemize}
+So on \texttt{MQT Bench}, the optimized branch repeatedly recovers \texttt{qiskit opt3} output quality and clearly improves over baseline UCC, but runtime remains weaker on the hardest Grover-style case.
+
+\paragraph{SupermarQ.}
+For \texttt{supermarq\_mermin\_bell\_8}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: $76$ gates, depth $44$
+    \item baseline UCC: $386$ gates, depth $135$
+    \item optimized UCC: $76$ gates, depth $44$
+\end{itemize}
+
+For \texttt{supermarq\_qaoa\_vanilla\_12}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: $222$ gates, depth $80$
+    \item baseline UCC: $947$ gates, depth $225$
+    \item optimized UCC: $222$ gates, depth $80$
+\end{itemize}
+
+For \texttt{supermarq\_hamiltonian\_sim\_8}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt1}: $29$ gates, depth $22$
+    \item \texttt{qiskit opt3}: $51$ gates, depth $24$
+    \item baseline UCC: $71$ gates, depth $36$
+    \item optimized UCC: $71$ gates, depth $36$
+\end{itemize}
+This second public benchmark source strengthens the paper in two ways. It shows clear anti-regression behavior on additional nontrivial families, and it also exposes a realistic limitation: the optimized branch is not uniformly better on every benchmark family.
+
+\subsection{Hardware-Aware Results}
+
+We also added a backend-aware comparison using a fixed $20$-qubit bidirectional line backend with native operations:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{u},
+    \item \texttt{sx},
+    \item \texttt{p},
+    \item \texttt{cx},
+    \item \texttt{measure},
+    \item \texttt{id}.
+\end{itemize}
+
+The compared cases are:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{hw\_mqt\_qpeexact\_20},
+    \item \texttt{hw\_mqt\_qaoa\_20},
+    \item \texttt{hw\_mqt\_grover\_20}.
+\end{itemize}
+
+The canonical frozen run uses \texttt{seed\_transpiler = 12345}. The canonical results are as follows.
+
+\paragraph{\texttt{hw\_mqt\_qpeexact\_20}.}
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Method & Output Gates & Output Depth & CX Count & Runtime \\
+\midrule
+qiskit opt3 & 1{,}572 & 407 & 812 & 0.054 s \\
+baseline UCC & 1{,}979 & 571 & 1{,}244 & 0.113 s \\
+optimized UCC & 1{,}593 & 420 & 772 & 0.572 s \\
+\bottomrule
+\end{tabular}
+\caption{Hardware-aware results for \texttt{hw\_mqt\_qpeexact\_20}.}
+\end{table}
+
+This is a mixed but informative case: the optimized branch strongly improves over baseline UCC and reduces \texttt{cx} count relative to \texttt{qiskit opt3}, but still loses on total gates, depth, and runtime.
+
+\paragraph{\texttt{hw\_mqt\_qaoa\_20}.}
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Method & Output Gates & Output Depth & CX Count & Runtime \\
+\midrule
+qiskit opt3 & 2{,}091 & 532 & 1{,}530 & 0.069 s \\
+baseline UCC & 2{,}072 & 539 & 1{,}434 & 0.117 s \\
+optimized UCC & 2{,}050 & 487 & 1{,}458 & 0.513 s \\
+\bottomrule
+\end{tabular}
+\caption{Hardware-aware results for \texttt{hw\_mqt\_qaoa\_20}.}
+\end{table}
+
+This is the clearest hardware-aware external-baseline win in the paper:
+\begin{itemize}[leftmargin=1.5em]
+    \item versus \texttt{qiskit opt3}, optimized UCC reduces total gates, depth, and \texttt{cx};
+    \item versus baseline UCC, optimized UCC reduces total gates and depth while keeping \texttt{cx} low.
+\end{itemize}
+
+\paragraph{\texttt{hw\_mqt\_grover\_20}.}
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qiskit opt3}: timeout at $>240$s,
+    \item baseline UCC: timeout at $>240$s,
+    \item optimized UCC: timeout at $>240$s.
+\end{itemize}
+We therefore do not use this case as a main quantitative claim. Its value is mainly as evidence that backend-aware Grover-style routing remains hard for all three methods.
+
+\subsection{Stability and Seed Sensitivity}
+
+We measured repeated-run stability on the frozen branch in two ways:
+\begin{enumerate}[leftmargin=1.5em]
+    \item five repeated runs for the official real instances and the canonical hardware-aware seed,
+    \item a five-seed sweep for the backend-aware MQT Bench cases.
+\end{enumerate}
+
+The main conclusions are:
+\begin{itemize}[leftmargin=1.5em]
+    \item the official real-instance outputs are deterministic across repeated runs,
+    \item the canonical hardware-aware results are deterministic for each fixed seed,
+    \item \texttt{hw\_mqt\_qaoa\_20} remains a win over \texttt{qiskit opt3} across all five tested seeds: $0$, $1$, $42$, $12345$, and $54321$,
+    \item \texttt{hw\_mqt\_qpeexact\_20} remains mixed: parity on some seeds and lower \texttt{cx} but worse total gates/depth on others.
+\end{itemize}
+So the strongest backend-aware claim in the frozen branch is no longer a single-sample result. It is a stable workload-family win across five fixed transpiler seeds.
+
+\subsection{Scaling Study}
+
+We ran a size sweep at
+\[
+4\text{k},\ 10\text{k},\ 20\text{k},\ 50\text{k},\ 100\text{k}
+\]
+for four representative families:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qft\_inverse},
+    \item \texttt{qpe\_style},
+    \item \texttt{qaoa\_ring},
+    \item \texttt{grover\_mirrored}.
+\end{itemize}
+
+The main scaling observations are:
+\begin{enumerate}[leftmargin=1.5em]
+    \item \texttt{qft\_inverse}: output quality remains maximally strong across all tested sizes; the optimized branch returns $0$ gates at every size; runtime remains low relative to baseline behavior.
+    \item \texttt{qpe\_style}: output quality improves substantially at every scale; at $100$k, the frozen branch reaches $167{,}800$ gates in $11.792$s; this remains one of the strongest fixed-basis wins in the study.
+    \item \texttt{qaoa\_ring}: the optimized branch consistently prevents UCC inflation; output remains equal to input size at all tested scales; at $100$k, runtime remains low ($2.917$s).
+    \item \texttt{grover\_mirrored}: the optimized branch reduces output size strongly at every scale; at $100$k, it matches the strongest Qiskit output quality; runtime still grows substantially, with the frozen table showing $14.852$s.
+\end{enumerate}
+Taken together, the scaling study shows stable quality behavior with uneven runtime scaling. The method is strongest on exact or highly repeated structure, but still expensive on some nontrivial Grover-like families.
+
+\subsection{Ablation Study}
+
+We ran a $10{,}000$-gate ablation study over:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{qft\_inverse},
+    \item \texttt{qft\_control},
+    \item \texttt{qpe\_style},
+    \item \texttt{qaoa\_ring},
+    \item \texttt{grover\_mirrored}.
+\end{itemize}
+
+The refreshed ablation picture is narrower than the earliest version of this draft.
+
+The most important ablation result is that \textbf{candidate selection remains the dominant practical component mainly on the anti-regression families}, most clearly on \texttt{qaoa\_ring}:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{full}: $10{,}000$
+    \item \texttt{no\_candidate\_selection}: $30{,}055$
+\end{itemize}
+
+By contrast, \texttt{qft\_inverse}, \texttt{qft\_control}, \texttt{qpe\_style}, and \texttt{grover\_mirrored} are now much less sensitive to the other individual structural-rule removals at $10{,}000$ gates than they were in the older draft.
+
+This indicates that the branch has become more concentrated around a systems design contribution:
+\begin{itemize}[leftmargin=1.5em]
+    \item bounded preprocessing,
+    \item conservative candidate selection,
+    \item source-level short-circuiting,
+    \item and limited backend-aware seed portfolios where the compiled path is known to be unstable.
+\end{itemize}
+
+\section{Discussion}
+
+The formal definitions above are intentionally lightweight. They do not attempt to characterize all useful quantum-circuit structure or to prove global optimality. Instead, they serve a narrower purpose that matches the empirical paper: to distinguish pre-basis structural opportunities from ordinary lowering overhead, to make the anti-regression claim precise, and to justify why a bounded preprocessing stage can be a meaningful systems contribution even without universal dominance.
+
+The results support six conclusions.
+
+First, pipeline placement matters. On structured workloads, preprocessing before basis lowering can be dramatically stronger than adding a pass after the default compilation flow.
+
+Second, the strongest exact inverse case is not enough by itself to claim novelty. Existing techniques already handle canonical inverse cancellation. The value of this work lies more in bounded structural preprocessing as a systems design decision inside UCC.
+
+Third, candidate selection is central, but in a more targeted way than the older draft suggested. The refreshed ablation study shows that it is especially important as an anti-regression mechanism on workloads such as \texttt{qaoa\_ring}.
+
+Fourth, the empirical story now goes beyond curated or single-source results. The frozen branch recovers strong output quality on official Qiskit instances, on MQT Bench, and on SupermarQ, while also exposing realistic mixed cases such as \texttt{supermarq\_hamiltonian\_sim\_8}.
+
+Fifth, the strongest hardware-aware claim is now stable rather than single-sample. The \texttt{hw\_mqt\_qaoa\_20} win over \texttt{qiskit opt3} persists across five fixed transpiler seeds.
+
+Sixth, runtime remains a real constraint. The method clearly helps on repeat-heavy circuits and now behaves much better on QPE-style, but backend-aware Grover-style routing remains difficult for all methods and some public-suite families still reduce only to parity with strong Qiskit baselines.
+
+\section{Threats to Validity}
+
+This study has several limitations.
+\begin{enumerate}[leftmargin=1.5em]
+    \item The evaluation is centered on UCC and Qiskit-flavored workflows.
+    \item Some benchmark families are intentionally structured and may not represent all realistic workloads.
+    \item The current method is bounded and heuristic rather than globally optimal.
+    \item Strong external baselines may still match or exceed the method on some families.
+    \item While this draft now includes two public benchmark sources, backend-aware data, and five-seed stability evidence, the strongest external-baseline story is still selective rather than dominant across all families.
+\end{enumerate}
+
+\section{Reproducibility}
+
+The frozen research directory now includes a standardized artifact entry point:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{run\_frozen\_artifact.py}
+\end{itemize}
+plus supporting documentation:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{artifact\_environment\_snapshot.md}
+    \item \texttt{artifact\_output\_manifest.md}
+    \item \texttt{artifact\_reproducibility\_guide.md}
+\end{itemize}
+
+Together these documents specify:
+\begin{itemize}[leftmargin=1.5em]
+    \item the local Python and package environment,
+    \item the expected baseline and experimental repository layout,
+    \item the canonical output files for each experiment bundle,
+    \item the one-command reproduction path for the frozen experiment suite.
+\end{itemize}
+
+The remaining artifact work is packaging rather than reproducibility logic:
+\begin{itemize}[leftmargin=1.5em]
+    \item figure-generation scripts,
+    \item archive layout for release,
+    \item CI automation for the frozen suite.
+\end{itemize} 
+
+\section{Conclusion}
+
+This paper supports a compiler-systems claim rather than a sweeping algorithmic one. A bounded pre-basis structural preprocessing stage can materially improve UCC's default behavior on large structured circuits, especially when repeated or inverse structure would otherwise be hidden by early basis lowering. The frozen results now go beyond simple quality parity: they include official real-instance evidence, two public benchmark sources, and a hardware-aware QAOA case where the optimized branch beats \texttt{qiskit opt3} across five tested fixed seeds. The remaining challenge is to broaden that win beyond the current workload families and make the behavior more uniformly efficient.
+
+\end{document}

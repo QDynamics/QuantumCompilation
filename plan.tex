@@ -1,0 +1,492 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
+
+\setlist[itemize]{leftmargin=1.8em}
+\setlist[enumerate]{leftmargin=2.0em}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+
+\title{Submission Readiness Checklist and 6-Month Execution Plan\\
+for Pre-Basis Structural Simplification in Quantum Compilation}
+\author{YangJinsey}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Project Positioning}
+
+\noindent
+This project should be developed along a two-track strategy:
+
+\begin{itemize}
+    \item \textbf{Track A: Quantum-ready paper.}  
+    The goal is a strong, reproducible compiler-systems paper showing that bounded pre-basis structural simplification can prevent severe regressions on structured workloads and recover strong external-baseline quality on real algorithm-family circuits.
+    
+    \item \textbf{Track B: PRX-ready upgrade path.}  
+    The goal is not merely to improve one codebase, but to elevate the project into a more general principle of quantum compilation: namely, that basis lowering can irreversibly destroy higher-level structure, and that a bounded pre-basis simplification stage can preserve exploitable optimizability gaps for structured circuit families.
+\end{itemize}
+
+\section{Master Checklist}
+
+\subsection{A. Must-Do for a Strong Quantum Submission}
+
+\begin{enumerate}
+    \item \textbf{Refresh all existing tables on the latest optimized branch.}
+    \begin{itemize}
+        \item Re-run all headline result tables.
+        \item Eliminate stale numbers, timeouts from old code, and inconsistent baselines.
+        \item Ensure every figure and table is regenerated from the current implementation.
+    \end{itemize}
+
+    \item \textbf{Consolidate the empirical claim.}
+    \begin{itemize}
+        \item Make the main claim precise:
+        \begin{quote}
+        bounded pre-basis structural preprocessing can act as an anti-regression and quality-recovery layer for structured circuits in UCC
+        \end{quote}
+        \item Avoid overclaiming universal superiority.
+        \item Explicitly distinguish:
+        \begin{itemize}
+            \item strong success cases,
+            \item anti-regression cases,
+            \item weak/no-gain cases.
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{Add at least one public benchmark source beyond current curated Qiskit examples.}
+    \begin{itemize}
+        \item Preferred: MQT Bench or SupermarQ.
+        \item Minimum target: 2--3 representative benchmark instances.
+        \item Use the same comparison protocol as the current core tables.
+    \end{itemize}
+
+    \item \textbf{Include at least one backend-aware or architecture-aware study.}
+    \begin{itemize}
+        \item Use a fixed coupling map or a realistic backend target.
+        \item Report: total gates, depth, 2-qubit gates, runtime.
+        \item Compare: baseline UCC, optimized UCC, Qiskit opt3.
+    \end{itemize}
+
+    \item \textbf{Strengthen ablation and runtime credibility.}
+    \begin{itemize}
+        \item Isolate the role of:
+        \begin{itemize}
+            \item pre-basis preprocessing,
+            \item candidate selection,
+            \item short-circuiting,
+            \item commutative inverse cancellation,
+            \item bounded iteration / bounded block selection.
+        \end{itemize}
+        \item Add repeated timing for major headline cases if feasible.
+    \end{itemize}
+
+    \item \textbf{Provide one clean artifact story.}
+    \begin{itemize}
+        \item One-command or clearly scripted reproduction.
+        \item Explicit mapping from scripts to tables/figures.
+        \item Saved JSON/CSV/Markdown outputs.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{B. High-Value Upgrades for PRX Competitiveness}
+
+\begin{enumerate}
+    \item \textbf{Upgrade the central claim from a UCC result to a compiler principle.}
+    \begin{itemize}
+        \item Move from:
+        \begin{quote}
+        ``this improves UCC''
+        \end{quote}
+        to:
+        \begin{quote}
+        ``there exists a class of structured circuits for which pre-basis simplification is fundamentally more effective than post-lowering simplification''
+        \end{quote}
+        \item Formalize the notion of structure loss after basis lowering.
+    \end{itemize}
+
+    \item \textbf{Broaden compiler comparison beyond UCC and Qiskit alone.}
+    \begin{itemize}
+        \item Add TKET if feasible.
+        \item Add one additional relevant baseline if practical.
+        \item Use fair, explicitly documented comparison settings.
+    \end{itemize}
+
+    \item \textbf{Expand to a broader public benchmark corpus.}
+    \begin{itemize}
+        \item Include multiple sources rather than one curated family.
+        \item Cover more than three real instances.
+        \item Ensure family diversity:
+        \begin{itemize}
+            \item phase-estimation style,
+            \item amplitude-estimation / amplification style,
+            \item QAOA beyond a single ansatz family,
+            \item mirrored / inverse-structured search circuits.
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{Show repeated wins, not just parity.}
+    \begin{itemize}
+        \item A PRX-style paper should ideally contain multiple real families where your method:
+        \begin{itemize}
+            \item beats strong baselines in gate count or depth, or
+            \item beats them in runtime at matched quality, or
+            \item yields a hardware-relevant 2Q advantage.
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{Add a stronger theoretical section.}
+    \begin{itemize}
+        \item Define classes of circuits with pre-lowering vs post-lowering optimizability gaps.
+        \item State sufficient conditions for recoverable vs irrecoverable structure loss.
+        \item Analyze bounded preprocessing complexity and the placement gap conceptually.
+    \end{itemize}
+
+    \item \textbf{Tie empirical results to a general scientific conclusion.}
+    \begin{itemize}
+        \item The paper should conclude more than:
+        \begin{quote}
+        ``this branch works well''
+        \end{quote}
+        \item It should conclude something like:
+        \begin{quote}
+        ``compiler pass placement is itself a scientifically meaningful variable in structured quantum circuit optimization''
+        \end{quote}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{C. Things Not Worth Spending Too Much Time On}
+
+\begin{enumerate}
+    \item polishing already-solved toy cases;
+    \item adding many more synthetic variants without expanding scientific insight;
+    \item chasing tiny constant-factor speedups before the paper-level claim is stable;
+    \item over-engineering code cleanup before the final experimental story is fixed;
+    \item spending weeks on prose before the missing experiments and theory framing are done.
+\end{enumerate}
+
+\section{Priority Triage}
+
+\subsection{Tier 1: Must Finish}
+\begin{itemize}
+    \item refresh all main tables on latest code;
+    \item finalize ablation refresh;
+    \item add one public benchmark source;
+    \item add one backend-aware study;
+    \item stabilize artifact reproduction;
+    \item write clean problem statement and main claim.
+\end{itemize}
+
+\subsection{Tier 2: Strongly Recommended}
+\begin{itemize}
+    \item repeated timing / variance on headline cases;
+    \item one additional real algorithm family beyond the current three;
+    \item failure-case section;
+    \item a stronger introduction with a principled statement about structure loss.
+\end{itemize}
+
+\subsection{Tier 3: PRX-Oriented Stretch Goals}
+\begin{itemize}
+    \item cross-compiler comparison beyond Qiskit;
+    \item formal statement of pre-basis advantage conditions;
+    \item multiple public benchmark suites;
+    \item repeated clear wins on real workloads;
+    \item a theory-driven section on placement and optimizability gaps.
+\end{itemize}
+
+\section{Six-Month Detailed Schedule}
+
+\noindent
+The schedule below is written at a two-week granularity. It is designed so that:
+\begin{itemize}
+    \item by Month 3, the project is in strong \textbf{Quantum-ready} shape;
+    \item by Month 6, the project is either:
+    \begin{itemize}
+        \item submitted to \textbf{Quantum} / \textbf{ACM TQC} / \textbf{IEEE TQE}, or
+        \item upgraded as far as realistically possible toward \textbf{PRX Quantum}.
+    \end{itemize}
+\end{itemize}
+
+\begin{longtable}{p{0.10\textwidth} p{0.20\textwidth} p{0.32\textwidth} p{0.30\textwidth}}
+\toprule
+\textbf{Weeks} & \textbf{Theme} & \textbf{Main Tasks} & \textbf{Deliverables} \\
+\midrule
+\endhead
+
+1--2 &
+Audit and stabilization &
+\begin{itemize}
+    \item audit all existing result files;
+    \item identify stale tables and mismatched branches;
+    \item freeze the current optimized branch for paper experiments;
+    \item define the exact baseline protocol.
+\end{itemize}
+&
+\begin{itemize}
+    \item experiment inventory;
+    \item list of tables to rerun;
+    \item frozen experiment configuration file.
+\end{itemize}
+\\
+
+3--4 &
+Core refresh &
+\begin{itemize}
+    \item rerun headline real-instance tables;
+    \item rerun scaling tables;
+    \item rerun ablation tables;
+    \item verify reproducibility of each table.
+\end{itemize}
+&
+\begin{itemize}
+    \item refreshed master result tables;
+    \item regenerated figures;
+    \item updated results directory with current outputs.
+\end{itemize}
+\\
+
+5--6 &
+Public benchmark expansion I &
+\begin{itemize}
+    \item integrate one public benchmark source;
+    \item select 2--3 representative instances;
+    \item run baseline UCC / optimized UCC / Qiskit opt3;
+    \item inspect whether current claim generalizes.
+\end{itemize}
+&
+\begin{itemize}
+    \item one new benchmark subsection;
+    \item raw data for public benchmark results.
+\end{itemize}
+\\
+
+7--8 &
+Hardware-aware study &
+\begin{itemize}
+    \item choose one realistic coupling map or backend target;
+    \item define routing / compilation settings fairly;
+    \item run hardware-aware comparisons;
+    \item record depth and 2Q metrics.
+\end{itemize}
+&
+\begin{itemize}
+    \item one backend-aware table;
+    \item one backend-aware discussion subsection.
+\end{itemize}
+\\
+
+9--10 &
+Ablation deepening and timing quality &
+\begin{itemize}
+    \item isolate method components more clearly;
+    \item add repeated timing for headline cases;
+    \item summarize no-gain / weak-gain cases;
+    \item identify runtime bottlenecks in the current implementation.
+\end{itemize}
+&
+\begin{itemize}
+    \item cleaned ablation section;
+    \item timing variance table;
+    \item shortlist of implementation bottlenecks.
+\end{itemize}
+\\
+
+11--12 &
+Paper draft I: Quantum version &
+\begin{itemize}
+    \item write abstract, introduction, related work;
+    \item write method section;
+    \item write experiment protocol and main results;
+    \item draft limitations and failure cases.
+\end{itemize}
+&
+\begin{itemize}
+    \item complete first full draft for a Quantum-style paper.
+\end{itemize}
+\\
+
+13--14 &
+Narrative upgrade &
+\begin{itemize}
+    \item rewrite the introduction around the structure-loss problem;
+    \item define placement as a central variable;
+    \item sharpen the distinction between:
+    \begin{itemize}
+        \item anti-regression,
+        \item quality recovery,
+        \item true external-baseline wins.
+    \end{itemize}
+\end{itemize}
+&
+\begin{itemize}
+    \item stronger framing memo;
+    \item revised abstract and introduction.
+\end{itemize}
+\\
+
+15--16 &
+Theory framing I &
+\begin{itemize}
+    \item formalize circuit-family categories:
+    \begin{itemize}
+        \item exact inverse,
+        \item repeated exact,
+        \item mirrored,
+        \item commuting inverse chains.
+    \end{itemize}
+    \item write a clean complexity discussion;
+    \item define recoverable vs irrecoverable structure loss.
+\end{itemize}
+&
+\begin{itemize}
+    \item theory note or appendix draft;
+    \item candidate theorem/proposition statements.
+\end{itemize}
+\\
+
+17--18 &
+PRX-oriented expansion I &
+\begin{itemize}
+    \item test one additional real algorithm family;
+    \item try one more compiler baseline if feasible;
+    \item examine whether any result becomes a genuine repeated win.
+\end{itemize}
+&
+\begin{itemize}
+    \item expanded comparison table;
+    \item decision memo: PRX upgrade still plausible or not.
+\end{itemize}
+\\
+
+19--20 &
+Implementation optimization pass &
+\begin{itemize}
+    \item optimize the worst runtime bottlenecks only if they affect headline claims;
+    \item improve bounded scanning, block selection, or caching where most valuable;
+    \item rerun the few cases most affected by speed improvements.
+\end{itemize}
+&
+\begin{itemize}
+    \item one optimized implementation revision;
+    \item before/after timing comparison.
+\end{itemize}
+\\
+
+21--22 &
+Paper draft II: submission version &
+\begin{itemize}
+    \item integrate all refreshed results;
+    \item finalize figures and captions;
+    \item finalize artifact appendix;
+    \item decide target venue based on evidence.
+\end{itemize}
+&
+\begin{itemize}
+    \item near-submission manuscript;
+    \item complete artifact guide.
+\end{itemize}
+\\
+
+23--24 &
+External review and final polish &
+\begin{itemize}
+    \item send draft to trusted readers / mentors;
+    \item incorporate feedback;
+    \item reduce overclaiming;
+    \item finalize author list, acknowledgments, and repository packaging.
+\end{itemize}
+&
+\begin{itemize}
+    \item final submission package;
+    \item arXiv-ready source;
+    \item journal submission decision.
+\end{itemize}
+\\
+
+\bottomrule
+\end{longtable}
+
+\section{Monthly Milestones}
+
+\subsection*{End of Month 1}
+\begin{itemize}
+    \item all stale experiments identified;
+    \item core tables refreshed;
+    \item experiment pipeline stabilized.
+\end{itemize}
+
+\subsection*{End of Month 2}
+\begin{itemize}
+    \item one public benchmark source added;
+    \item one hardware-aware study completed;
+    \item strong Quantum-level empirical story assembled.
+\end{itemize}
+
+\subsection*{End of Month 3}
+\begin{itemize}
+    \item full Quantum-style draft completed;
+    \item artifact path clear;
+    \item realistic submission to Quantum / ACM TQC / IEEE TQE becomes possible.
+\end{itemize}
+
+\subsection*{End of Month 4}
+\begin{itemize}
+    \item framing upgraded from ``UCC optimization'' to ``structure-loss and placement principle'';
+    \item theory note drafted.
+\end{itemize}
+
+\subsection*{End of Month 5}
+\begin{itemize}
+    \item extra compiler or benchmark evidence added if feasible;
+    \item runtime bottlenecks selectively improved;
+    \item PRX viability reassessed honestly.
+\end{itemize}
+
+\subsection*{End of Month 6}
+\begin{itemize}
+    \item either:
+    \begin{itemize}
+        \item submit the strongest realistic version to Quantum / ACM TQC / IEEE TQE,
+    \end{itemize}
+    \item or:
+    \begin{itemize}
+        \item if the generality, theory, and repeated wins are now strong enough, prepare a PRX Quantum submission.
+    \end{itemize}
+\end{itemize}
+
+\section{Decision Rule at the End of the Plan}
+
+\noindent
+At the end of the six-month cycle, choose the venue using the following rule:
+
+\begin{itemize}
+    \item \textbf{Submit to Quantum / ACM TQC / IEEE TQE} if the paper has:
+    \begin{itemize}
+        \item refreshed and credible experiments,
+        \item one public benchmark extension,
+        \item one backend-aware study,
+        \item a strong reproducibility package,
+        \item a clean compiler-systems claim,
+        \item but mostly parity / anti-regression rather than repeated wins.
+    \end{itemize}
+
+    \item \textbf{Consider PRX Quantum} only if the paper has:
+    \begin{itemize}
+        \item a clear general principle beyond UCC,
+        \item broad public evidence across multiple families,
+        \item strong external-baseline wins on real workloads,
+        \item hardware-relevant validation,
+        \item and a meaningful theoretical component.
+    \end{itemize}
+\end{itemize}
+
+\end{document}
